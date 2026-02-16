@@ -1,0 +1,29 @@
+manifestVersion: 1
+id: btc-prometheus
+name: BTC-Prometheus
+tagline: Sovereign Bitcoin full node with built-in monitoring
+icon: prometheus128.jpg
+category: bitcoin
+version: "0.1.0"
+port: 3000
+description: >-
+  BTC-Prometheus is a Bitcoin full node client that puts every policy decision
+  in the operator's hands. Features include a Sovereign Controls settings panel,
+  fire-themed dark UI, built-in Prometheus metrics endpoint, and privacy-friendly
+  defaults. 100% consensus compatible with the Bitcoin network.
+developer: BTC-Prometheus Contributors
+website: https://github.com/CryptoIceMLH/bitcoin-prometheus
+repo: https://github.com/CryptoIceMLH/bitcoin-prometheus
+support: https://github.com/CryptoIceMLH/bitcoin-prometheus/issues
+gallery:
+  - 1.jpg
+  - 2.jpg
+releaseNotes: >-
+  Initial release of BTC-Prometheus v0.1.0 with custom web UI, dashboard,
+  and Sovereign Controls panel.
+dependencies: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+submitter: CryptoIceMLH
+submission: https://github.com/CryptoIceMLH/bitcoin-prometheus

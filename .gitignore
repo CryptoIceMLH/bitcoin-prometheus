@@ -1,0 +1,33 @@
+# Build subdirectories.
+/*build*
+!/build-aux
+!/build_msvc
+
+*.pyc
+
+# Only ignore unexpected patches
+*.patch
+!contrib/guix/patches/*.patch
+!depends/patches/**/*.patch
+
+/CMakeUserPresets.json
+
+# Previous releases
+/releases
+
+#build tests
+test/lint/test_runner/target/
+
+/guix-build-*
+
+/ci/scratch/
+
+# UI
+ui/frontend/node_modules/
+ui/frontend/dist/
+ui/backend/node_modules/
+ui/backend/dist/
+
+# Credentials (never commit)
+.credentials
+.cookie

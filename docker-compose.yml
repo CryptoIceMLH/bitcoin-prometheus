@@ -1,0 +1,44 @@
+services:
+  prometheus-node:
+    build: .
+    container_name: btc-prometheus
+    restart: unless-stopped
+    ports:
+      - "8333:8333"   # P2P
+      - "8332:8332"   # RPC + Metrics (/metrics endpoint)
+    volumes:
+      - prometheus-data:/home/prometheus/.prometheus
+    command:
+      - -printtoconsole
+      - -rpcallowip=0.0.0.0/0
+      - -rpcbind=0.0.0.0
+
+  ui-backend:
+    build: ./ui/backend
+    container_name: btc-prometheus-api
+    restart: unless-stopped
+    environment:
+      - RPC_HOST=prometheus-node
+      - RPC_PORT=8332
+      - DATA_DIR=/data
+    volumes:
+      - prometheus-data:/data
+    depends_on:
+      - prometheus-node
+
+  ui-frontend:
+    build: ./ui/frontend
+    container_name: btc-prometheus-ui
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - ui-backend
+
+  tor-proxy:
+    image: peterdavehello/tor-socks-proxy:latest
+    container_name: btc-prometheus-tor
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:

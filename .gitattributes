@@ -1,0 +1,4 @@
+src/clientversion.cpp export-subst
+
+# Force LF line endings for shell scripts (they break on Linux with CRLF)
+*.sh text eol=lf

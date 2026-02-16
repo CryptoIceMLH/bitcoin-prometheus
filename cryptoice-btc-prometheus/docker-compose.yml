@@ -1,44 +1,41 @@
 services:
+  app_proxy:
+    environment:
+      APP_HOST: cryptoice-btc-prometheus_ui-frontend_1
+      APP_PORT: 80
+
   prometheus-node:
-    build: ../
-    container_name: btc-prometheus
+    image: ghcr.io/cryptoicemlh/btc-prometheus-node:v0.1.0
     restart: unless-stopped
+    stop_grace_period: 15m30s
     ports:
       - "8333:8333"
       - "8332:8332"
     volumes:
-      - prometheus-data:/home/prometheus/.prometheus
+      - ${APP_DATA_DIR}/data:/home/prometheus/.prometheus
     command:
       - -printtoconsole
       - -rpcallowip=0.0.0.0/0
       - -rpcbind=0.0.0.0
 
   ui-backend:
-    build: ../ui/backend
-    container_name: btc-prometheus-api
+    image: ghcr.io/cryptoicemlh/btc-prometheus-api:v0.1.0
     restart: unless-stopped
     environment:
-      - RPC_HOST=prometheus-node
+      - RPC_HOST=cryptoice-btc-prometheus_prometheus-node_1
       - RPC_PORT=8332
       - DATA_DIR=/data
     volumes:
-      - prometheus-data:/data
+      - ${APP_DATA_DIR}/data:/data
     depends_on:
       - prometheus-node
 
   ui-frontend:
-    build: ../ui/frontend
-    container_name: btc-prometheus-ui
+    image: ghcr.io/cryptoicemlh/btc-prometheus-ui:v0.1.0
     restart: unless-stopped
-    ports:
-      - "3000:80"
     depends_on:
       - ui-backend
 
   tor-proxy:
     image: peterdavehello/tor-socks-proxy:latest
-    container_name: btc-prometheus-tor
     restart: unless-stopped
-
-volumes:
-  prometheus-data:

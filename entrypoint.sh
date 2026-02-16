@@ -7,6 +7,10 @@ DATA_DIR="/home/prometheus/.prometheus"
 CONF_FILE="${DATA_DIR}/prometheus.conf"
 CRED_FILE="${DATA_DIR}/.credentials"
 
+# Ensure data directory exists and is owned by prometheus
+mkdir -p "$DATA_DIR"
+chown -R prometheus:prometheus "$DATA_DIR"
+
 # Generate dashboard credentials on first run
 if [ ! -f "$CRED_FILE" ]; then
   DASH_PASS=$(head -c 32 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 16)
@@ -20,6 +24,7 @@ if [ ! -f "$CRED_FILE" ]; then
 }
 CREDEOF
   chmod 600 "$CRED_FILE"
+  chown prometheus:prometheus "$CRED_FILE"
 
   echo "=== BTC-Prometheus First Run ==="
   echo "Dashboard password: ${DASH_PASS}"
@@ -27,11 +32,20 @@ CREDEOF
   echo "================================"
 fi
 
-# Remove any legacy rpcuser/rpcpassword from prometheus.conf so cookie auth activates
-if [ -f "$CONF_FILE" ]; then
-  sed -i '/^rpcuser=/d' "$CONF_FILE"
-  sed -i '/^rpcpassword=/d' "$CONF_FILE"
+# Create default config on first run if none exists
+if [ ! -f "$CONF_FILE" ]; then
+  cat > "$CONF_FILE" <<CONFEOF
+# BTC-Prometheus configuration
+# RPC cookie auth is used by default (no rpcuser/rpcpassword needed)
+server=1
+txindex=0
+CONFEOF
+  chown prometheus:prometheus "$CONF_FILE"
 fi
 
-# Start the node — cookie auth is automatic when no rpcpassword is set
-exec prometheusd -conf="$CONF_FILE" "$@"
+# Remove any legacy rpcuser/rpcpassword from prometheus.conf so cookie auth activates
+sed -i '/^rpcuser=/d' "$CONF_FILE"
+sed -i '/^rpcpassword=/d' "$CONF_FILE"
+
+# Drop to prometheus user and start the node
+exec su -s /bin/sh prometheus -c "exec prometheusd -conf=\"$CONF_FILE\" \"\$@\"" -- "$@"

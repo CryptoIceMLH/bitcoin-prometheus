@@ -34,7 +34,6 @@ COPY --from=builder /install/bin/ /usr/local/bin/
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-USER prometheus
 WORKDIR /home/prometheus
 
 # P2P, RPC (metrics at /metrics on RPC port)

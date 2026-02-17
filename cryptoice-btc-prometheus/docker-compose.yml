@@ -5,7 +5,7 @@ services:
       APP_PORT: 80
 
   prometheus-node:
-    image: ghcr.io/cryptoicemlh/btc-prometheus-node:v0.1.0
+    image: ghcr.io/cryptoicemlh/btc-prometheus-node:v0.1.1
     restart: unless-stopped
     stop_grace_period: 15m30s
     ports:
@@ -19,7 +19,7 @@ services:
       - -rpcbind=0.0.0.0
 
   ui-backend:
-    image: ghcr.io/cryptoicemlh/btc-prometheus-api:v0.1.0
+    image: ghcr.io/cryptoicemlh/btc-prometheus-api:v0.1.1
     restart: unless-stopped
     environment:
       - RPC_HOST=cryptoice-btc-prometheus_prometheus-node_1
@@ -31,7 +31,7 @@ services:
       - prometheus-node
 
   ui-frontend:
-    image: ghcr.io/cryptoicemlh/btc-prometheus-ui:v0.1.0
+    image: ghcr.io/cryptoicemlh/btc-prometheus-ui:v0.1.1
     restart: unless-stopped
     depends_on:
       - ui-backend

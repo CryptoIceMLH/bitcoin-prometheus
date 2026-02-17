@@ -1,25 +1,8 @@
-import { getToken, clearToken } from "./auth";
-
 const BASE = "/api";
 
-function authHeaders(): Record<string, string> {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-function handle401(res: Response): void {
-  if (res.status === 401) {
-    clearToken();
-    window.location.href = "/login";
-  }
-}
-
 async function fetchJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: authHeaders(),
-  });
+  const res = await fetch(`${BASE}${path}`);
   if (!res.ok) {
-    handle401(res);
     throw new Error(`API error: ${res.status}`);
   }
   return res.json() as Promise<T>;
@@ -164,30 +147,6 @@ export interface RpcCredentials {
 
 export const api = {
   // Auth
-  login: async (password: string): Promise<{ token: string }> => {
-    const res = await fetch(`${BASE}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({ error: "Login failed" }));
-      throw new Error(data.error || `Login failed: ${res.status}`);
-    }
-    return res.json() as Promise<{ token: string }>;
-  },
-  getSetup: async (): Promise<{ firstRun: boolean; password?: string }> => {
-    const res = await fetch(`${BASE}/auth/setup`);
-    return res.json() as Promise<{ firstRun: boolean; password?: string }>;
-  },
-  checkAuth: async (): Promise<boolean> => {
-    try {
-      const res = await fetch(`${BASE}/auth/check`, { headers: authHeaders() });
-      return res.ok;
-    } catch {
-      return false;
-    }
-  },
   getCredentials: () => fetchJSON<RpcCredentials>("/auth/credentials"),
 
   // Node
@@ -201,11 +160,10 @@ export const api = {
   saveSettings: async (settings: PolicySettings): Promise<SaveResult> => {
     const res = await fetch(`${BASE}/settings`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settings),
     });
     if (!res.ok) {
-      handle401(res);
       throw new Error(`Save failed: ${res.status}`);
     }
     return res.json() as Promise<SaveResult>;
@@ -213,10 +171,8 @@ export const api = {
   restartNode: async (): Promise<{ ok: boolean; message: string }> => {
     const res = await fetch(`${BASE}/node/restart`, {
       method: "POST",
-      headers: authHeaders(),
     });
     if (!res.ok) {
-      handle401(res);
       throw new Error(`Restart failed: ${res.status}`);
     }
     return res.json() as Promise<{ ok: boolean; message: string }>;

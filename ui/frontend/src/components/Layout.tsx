@@ -21,7 +21,7 @@ export default function Layout() {
         <div className="flex items-center gap-2.5">
           <BitcoinLogo />
           <div className="flex flex-col leading-tight">
-            <span className="text-sm sm:text-base font-bold text-fire-amber">Prometheus <span className="text-[10px] text-gray-500 font-normal">v0.1.0</span></span>
+            <span className="text-sm sm:text-base font-bold text-fire-amber">Prometheus <span className="text-[10px] text-gray-500 font-normal">v0.1.1</span></span>
             <span className="text-[10px] text-gray-500 hidden sm:block">Bitcoin Client</span>
           </div>
         </div>

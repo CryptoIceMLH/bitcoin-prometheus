@@ -142,7 +142,6 @@ export interface NodeLocation {
 export interface RpcCredentials {
   rpcUser: string;
   rpcPassword: string;
-  dashboardPassword: string;
 }
 
 export const api = {

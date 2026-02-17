@@ -78,6 +78,5 @@ authRouter.get("/credentials", (req, res) => {
   res.json({
     rpcUser,
     rpcPassword,
-    dashboardPassword: getDashboardPassword(),
   });
 });

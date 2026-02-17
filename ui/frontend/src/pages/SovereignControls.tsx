@@ -360,7 +360,6 @@ export default function SovereignControls() {
             </p>
             <CredentialField label="RPC Username" value={credentials.rpcUser} />
             <CredentialField label="RPC Password" value={credentials.rpcPassword} masked />
-            <CredentialField label="Dashboard Password" value={credentials.dashboardPassword} masked />
           </div>
         </Section>
       )}

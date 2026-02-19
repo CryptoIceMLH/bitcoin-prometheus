@@ -2,7 +2,7 @@ manifestVersion: 1
 id: bitcoin
 name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
-icon: https://raw.githubusercontent.com/CryptoIceMLH/bitcoin-prometheus/main/cryptoice-btc-prometheus/prometheus128.jpg
+icon: https://raw.githubusercontent.com/CryptoIceMLH/bitcoin-prometheus/main/bitcoin/prometheus128.jpg
 category: bitcoin
 version: "0.1.2"
 port: 3000

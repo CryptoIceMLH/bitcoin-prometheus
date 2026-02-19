@@ -16,6 +16,8 @@ export interface FireMapRenderer {
   stop: () => void;
   setPeers: (peers: MapPeer[]) => void;
   setNodeLocation: (lat: number, lon: number) => void;
+  enableLocationPicker: (onSave: (lat: number, lon: number) => void) => void;
+  disableLocationPicker: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,6 +76,8 @@ export function createFireMap(container: HTMLElement): FireMapRenderer {
   let nodeLon = -0.1;
   let raf = 0;
   let frame = 0;
+  let nodeLocationSet = false;
+  let pickerMarker: L.Marker | null = null;
 
   // --- Create Leaflet map ---
   // Match tile background so no grey seams show between tiles
@@ -146,21 +150,23 @@ export function createFireMap(container: HTMLElement): FireMapRenderer {
     const [nx, ny] = toPixel(nodeLat, nodeLon);
     const time = frame * 0.008;
 
-    // --- Node glow ---
-    ctx.globalCompositeOperation = "lighter";
-    const nodeGrad = ctx.createRadialGradient(nx, ny, 0, nx, ny, 22);
-    nodeGrad.addColorStop(0, "rgba(255, 160, 0, 0.7)");
-    nodeGrad.addColorStop(0.3, "rgba(255, 100, 0, 0.35)");
-    nodeGrad.addColorStop(1, "rgba(255, 69, 0, 0)");
-    ctx.fillStyle = nodeGrad;
-    ctx.beginPath();
-    ctx.arc(nx, ny, 22, 0, Math.PI * 2);
-    ctx.fill();
+    if (nodeLocationSet) {
+      // --- Node glow ---
+      ctx.globalCompositeOperation = "lighter";
+      const nodeGrad = ctx.createRadialGradient(nx, ny, 0, nx, ny, 22);
+      nodeGrad.addColorStop(0, "rgba(255, 160, 0, 0.7)");
+      nodeGrad.addColorStop(0.3, "rgba(255, 100, 0, 0.35)");
+      nodeGrad.addColorStop(1, "rgba(255, 69, 0, 0)");
+      ctx.fillStyle = nodeGrad;
+      ctx.beginPath();
+      ctx.arc(nx, ny, 22, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Node marker
-    ctx.globalCompositeOperation = "source-over";
-    drawBitcoinB(ctx, nx, ny, 10, "#FFBF00", 1);
-    ctx.globalCompositeOperation = "lighter";
+      // Node marker
+      ctx.globalCompositeOperation = "source-over";
+      drawBitcoinB(ctx, nx, ny, 10, "#FFBF00", 1);
+      ctx.globalCompositeOperation = "lighter";
+    }
 
     // --- Arcs + travelling symbols ---
     for (let pi = 0; pi < peers.length; pi++) {
@@ -247,7 +253,34 @@ export function createFireMap(container: HTMLElement): FireMapRenderer {
     setNodeLocation(lat: number, lon: number) {
       nodeLat = lat;
       nodeLon = lon;
+      nodeLocationSet = true;
+      if (pickerMarker) {
+        pickerMarker.remove();
+        pickerMarker = null;
+      }
       map.setView([lat, lon], map.getZoom(), { animate: true });
+    },
+    enableLocationPicker(onSave: (lat: number, lon: number) => void) {
+      if (pickerMarker) return;
+      const center = map.getCenter();
+      const icon = L.divIcon({
+        className: "",
+        html: `<div style="width:28px;height:28px;background:#FFBF00;border-radius:50%;border:3px solid #FF4500;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;color:#000;box-shadow:0 0 12px rgba(255,160,0,0.6);cursor:grab">&#8383;</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+      pickerMarker = L.marker([center.lat, center.lng], { draggable: true, icon }).addTo(map);
+      pickerMarker.on("dragend", () => {
+        if (!pickerMarker) return;
+        const pos = pickerMarker.getLatLng();
+        onSave(pos.lat, pos.lng);
+      });
+    },
+    disableLocationPicker() {
+      if (pickerMarker) {
+        pickerMarker.remove();
+        pickerMarker = null;
+      }
     },
   };
 }

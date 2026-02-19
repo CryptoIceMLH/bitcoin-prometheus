@@ -1,6 +1,10 @@
 import { Router } from "express";
-import http from "http";
+import * as fs from "fs";
+import * as path from "path";
 import { rpcCall } from "../rpc";
+
+const DATA_DIR = process.env.DATA_DIR || "/data";
+const LOCATION_FILE = path.join(DATA_DIR, "node-location.json");
 
 export const nodeRouter = Router();
 
@@ -41,46 +45,39 @@ nodeRouter.get("/", async (_req, res) => {
         uptime: uptimeVal,
       });
     } catch (fallbackErr: unknown) {
-      const message = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-      res.status(502).json({ error: "Node unavailable", details: message });
+      console.error("[node] RPC error:", fallbackErr);
+      res.status(502).json({ error: "Node unavailable" });
     }
   }
 });
 
 // ---------------------------------------------------------------------------
-// Node's own geolocation (for fire map arc origin)
+// Node location — user-settable via UI (saved to DATA_DIR/node-location.json)
 // ---------------------------------------------------------------------------
 
-let cachedLocation: { lat: number; lon: number; country: string } | null = null;
-
-nodeRouter.get("/location", async (_req, res) => {
-  if (cachedLocation) {
-    return res.json(cachedLocation);
-  }
-
+nodeRouter.get("/location", (_req, res) => {
   try {
-    const data = await new Promise<string>((resolve, reject) => {
-      const req = http.get("http://ip-api.com/json/?fields=lat,lon,country,status", (resp) => {
-        let chunks = "";
-        resp.on("data", (c) => (chunks += c));
-        resp.on("end", () => resolve(chunks));
-        resp.on("error", reject);
-      });
-      req.on("error", reject);
-      req.on("timeout", () => { req.destroy(); reject(new Error("timeout")); });
-      req.setTimeout(5000);
-    });
-
-    const parsed = JSON.parse(data) as { status: string; lat?: number; lon?: number; country?: string };
-    if (parsed.status === "success" && parsed.lat != null && parsed.lon != null) {
-      cachedLocation = { lat: parsed.lat, lon: parsed.lon, country: parsed.country ?? "" };
-      res.json(cachedLocation);
-    } else {
-      // Fallback: London
-      res.json({ lat: 51.5, lon: -0.1, country: "Unknown" });
-    }
+    const data = fs.readFileSync(LOCATION_FILE, "utf8");
+    const loc = JSON.parse(data) as { lat: number; lon: number };
+    res.json(loc);
   } catch {
-    res.json({ lat: 51.5, lon: -0.1, country: "Unknown" });
+    res.json({ lat: null, lon: null });
+  }
+});
+
+nodeRouter.post("/location", (req, res) => {
+  const { lat, lon } = req.body as { lat?: number; lon?: number };
+  if (typeof lat !== "number" || typeof lon !== "number") {
+    res.status(400).json({ error: "lat and lon must be numbers" });
+    return;
+  }
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(LOCATION_FILE, JSON.stringify({ lat, lon }), "utf8");
+    res.json({ ok: true });
+  } catch (err: unknown) {
+    console.error("[node] save location error:", err);
+    res.status(500).json({ error: "Failed to save location" });
   }
 });
 
@@ -93,7 +90,7 @@ nodeRouter.post("/restart", async (_req, res) => {
     await rpcCall("stop");
     res.json({ ok: true, message: "Node shutdown initiated, Docker will restart it" });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    res.status(500).json({ error: "Failed to stop node", details: message });
+    console.error("[node] restart error:", err);
+    res.status(500).json({ error: "Failed to stop node" });
   }
 });

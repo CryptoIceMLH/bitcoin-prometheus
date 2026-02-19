@@ -1,10 +1,10 @@
 manifestVersion: 1
-id: btc-prometheus
+id: bitcoin
 name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: prometheus128.jpg
 category: bitcoin
-version: "0.1.1"
+version: "0.1.2"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -19,8 +19,9 @@ gallery:
   - 1.jpg
   - 2.jpg
 releaseNotes: >-
-  Fix node startup permissions on Umbrel, remove dashboard login requirement,
-  direct access to UI without password.
+  Security hardening: remove auth stack, sanitize error responses, add config
+  key allowlist, pin Docker base images, replace ip-api.com with local GeoIP,
+  add user-settable node location via draggable map pin.
 dependencies: []
 path: ""
 defaultUsername: ""

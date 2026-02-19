@@ -35,8 +35,8 @@ healthRouter.get("/", async (_req, res) => {
         pruning_enabled: pruning,
       });
     } catch (fallbackErr: unknown) {
-      const message = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-      res.status(502).json({ error: "Node unavailable", details: message });
+      console.error("[health] RPC error:", fallbackErr);
+      res.status(502).json({ error: "Node unavailable" });
     }
   }
 });

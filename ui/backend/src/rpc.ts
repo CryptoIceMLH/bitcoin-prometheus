@@ -1,7 +1,14 @@
-import { getRpcCookieAuth } from "./lib/credentials";
+import * as fs from "fs";
+import * as path from "path";
 
+const DATA_DIR = process.env.DATA_DIR || "/data";
+const COOKIE_FILE = path.join(DATA_DIR, ".cookie");
 const RPC_HOST = process.env.RPC_HOST || "prometheus-node";
 const RPC_PORT = process.env.RPC_PORT || "8332";
+
+function getRpcCookieAuth(): string {
+  return fs.readFileSync(COOKIE_FILE, "utf8").trim();
+}
 
 let requestId = 0;
 

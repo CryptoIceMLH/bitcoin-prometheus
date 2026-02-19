@@ -134,9 +134,8 @@ export interface SaveResult {
 }
 
 export interface NodeLocation {
-  lat: number;
-  lon: number;
-  country: string;
+  lat: number | null;
+  lon: number | null;
 }
 
 export interface RpcCredentials {
@@ -146,7 +145,7 @@ export interface RpcCredentials {
 
 export const api = {
   // Auth
-  getCredentials: () => fetchJSON<RpcCredentials>("/auth/credentials"),
+  getCredentials: () => fetchJSON<RpcCredentials>("/settings/credentials"),
 
   // Node
   getNode: () => fetchJSON<NodeInfo>("/node"),
@@ -175,5 +174,16 @@ export const api = {
       throw new Error(`Restart failed: ${res.status}`);
     }
     return res.json() as Promise<{ ok: boolean; message: string }>;
+  },
+  saveNodeLocation: async (lat: number, lon: number): Promise<{ ok: boolean }> => {
+    const res = await fetch(`${BASE}/node/location`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lat, lon }),
+    });
+    if (!res.ok) {
+      throw new Error(`Save location failed: ${res.status}`);
+    }
+    return res.json() as Promise<{ ok: boolean }>;
   },
 };

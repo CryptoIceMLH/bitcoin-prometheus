@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS builder
+FROM ubuntu:24.04@sha256:d1e2e92c075e5ca139d51a140fff46f84315c0fdce203eab2807c7e495eff4f9 AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential cmake pkg-config python3 \
@@ -20,7 +20,7 @@ RUN cmake -B out \
   && cmake --build out -j$(nproc) \
   && cmake --install out --prefix /install
 
-FROM ubuntu:24.04
+FROM ubuntu:24.04@sha256:d1e2e92c075e5ca139d51a140fff46f84315c0fdce203eab2807c7e495eff4f9
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libevent-2.1-7t64 libevent-extra-2.1-7t64 libevent-pthreads-2.1-7t64 \

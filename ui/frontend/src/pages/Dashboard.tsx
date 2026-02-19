@@ -64,6 +64,7 @@ function EternalFlame({
   health,
   blockPulse,
   nodeLocation,
+  onLocationSaved,
 }: {
   node: NodeInfo | null;
   peers: Peer[];
@@ -71,9 +72,11 @@ function EternalFlame({
   health: HealthInfo | null;
   blockPulse: boolean;
   nodeLocation: { lat: number; lon: number } | null;
+  onLocationSaved: (lat: number, lon: number) => void;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const fireMapRef = useRef<FireMapRenderer | null>(null);
+  const [picking, setPicking] = useState(false);
 
   // Initialize the fire map
   useEffect(() => {
@@ -98,6 +101,23 @@ function EternalFlame({
     if (!fireMapRef.current || !nodeLocation) return;
     fireMapRef.current.setNodeLocation(nodeLocation.lat, nodeLocation.lon);
   }, [nodeLocation]);
+
+  const startPicking = () => {
+    if (!fireMapRef.current) return;
+    setPicking(true);
+    fireMapRef.current.enableLocationPicker((lat, lon) => {
+      api.saveNodeLocation(lat, lon).then(() => {
+        onLocationSaved(lat, lon);
+        setPicking(false);
+        fireMapRef.current?.disableLocationPicker();
+      }).catch(() => {});
+    });
+  };
+
+  const cancelPicking = () => {
+    setPicking(false);
+    fireMapRef.current?.disableLocationPicker();
+  };
 
   // --- Connections Donut ---
   const totalPeers = node?.connections ?? peers.length;
@@ -179,6 +199,28 @@ function EternalFlame({
               Running for {formatUptime(health?.uptime ?? node?.uptime ?? 0)}
             </p>
           </div>
+          {/* Overlay: Set Node Location */}
+          {!nodeLocation && !picking && (
+            <div className="absolute top-3 right-4" style={{ zIndex: 600 }}>
+              <button
+                onClick={startPicking}
+                className="px-3 py-1.5 text-xs font-medium bg-fire-orange/20 text-fire-amber border border-fire-amber/30 rounded-lg hover:bg-fire-orange/30 transition-colors"
+              >
+                Set Node Location
+              </button>
+            </div>
+          )}
+          {picking && (
+            <div className="absolute top-3 right-4 flex items-center gap-2" style={{ zIndex: 600 }}>
+              <span className="text-xs text-fire-amber">Drag pin to your location</span>
+              <button
+                onClick={cancelPicking}
+                className="px-2 py-1 text-xs font-medium bg-gray-700/50 text-gray-300 rounded hover:bg-gray-600/50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -550,7 +592,11 @@ export default function Dashboard() {
   const [nodeLocation, setNodeLocation] = useState<{ lat: number; lon: number } | null>(null);
 
   useEffect(() => {
-    api.getNodeLocation().then((loc) => setNodeLocation({ lat: loc.lat, lon: loc.lon })).catch(() => {});
+    api.getNodeLocation().then((loc) => {
+      if (loc.lat != null && loc.lon != null) {
+        setNodeLocation({ lat: loc.lat, lon: loc.lon });
+      }
+    }).catch(() => {});
   }, []);
 
   // Activity + animation state
@@ -709,7 +755,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       {/* [A] Hero — Unified command center */}
-      <EternalFlame node={node} peers={peers} network={network} health={health} blockPulse={blockPulse} nodeLocation={nodeLocation} />
+      <EternalFlame node={node} peers={peers} network={network} health={health} blockPulse={blockPulse} nodeLocation={nodeLocation} onLocationSaved={(lat, lon) => setNodeLocation({ lat, lon })} />
 
       {/* [B] Genesis Quote */}
       <GenesisQuote />

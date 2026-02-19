@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "8333:8333"   # P2P
+      # WARNING: RPC port exposed to host. Ensure firewall blocks external access.
+      # Cookie auth is enforced, but this port should not be internet-facing.
       - "8332:8332"   # RPC + Metrics (/metrics endpoint)
     volumes:
       - prometheus-data:/home/prometheus/.prometheus
@@ -21,6 +23,7 @@ services:
       - RPC_HOST=prometheus-node
       - RPC_PORT=8332
       - DATA_DIR=/data
+      - CORS_ORIGIN=http://localhost:3000
     volumes:
       - prometheus-data:/data
     depends_on:
@@ -36,7 +39,7 @@ services:
       - ui-backend
 
   tor-proxy:
-    image: peterdavehello/tor-socks-proxy:latest
+    image: peterdavehello/tor-socks-proxy:latest@sha256:1a21ef796e1c8929d3fac4f06dabb1c4e0734fd0b733a54d5d7ef767bd0eaa85
     container_name: btc-prometheus-tor
     restart: unless-stopped
 

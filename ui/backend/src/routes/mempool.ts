@@ -22,8 +22,8 @@ mempoolRouter.get("/", async (_req, res) => {
         unbroadcastcount: info.unbroadcastcount,
       });
     } catch (fallbackErr: unknown) {
-      const message = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-      res.status(502).json({ error: "Node unavailable", details: message });
+      console.error("[mempool] RPC error:", fallbackErr);
+      res.status(502).json({ error: "Node unavailable" });
     }
   }
 });

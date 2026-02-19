@@ -9,6 +9,20 @@ export const settingsRouter = Router();
 // Keys that should NOT be written to the config file (managed elsewhere)
 const SKIP_CONF_KEYS = new Set(["addnode"]);
 
+// Only these keys may be written to prometheus.conf
+const ALLOWED_CONF_KEYS = new Set([
+  "datacarrier", "datacarriersize", "dbcache", "prune", "txindex", "par",
+  "maxmempool", "mempoolexpiry", "minrelaytxfee", "incrementalrelayfee",
+  "limitancestorcount", "limitdescendantcount", "permitbaremultisig", "bytespersigop",
+  "maxconnections", "listen", "blocksonly", "maxuploadtarget", "peerbloomfilters",
+  "peerblockfilters", "proxy", "onlynet", "upnp", "natpmp", "bantime",
+  "blockmaxweight", "blockmintxfee", "rpcthreads", "rpcworkqueue",
+  "debug", "logips", "logtimestamps", "mempoolfullrbf",
+]);
+
+// Address format: IPv4, bracketed IPv6, .onion hostname, or DNS name — with port
+const ADDR_PATTERN = /^(?:(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|[\w.-]+\.onion|[\w.-]+):\d{1,5}$/;
+
 // Convert settings object to prometheus.conf format
 function toConfFile(settings: Record<string, unknown>): string {
   const lines: string[] = [
@@ -19,6 +33,7 @@ function toConfFile(settings: Record<string, unknown>): string {
 
   for (const [key, value] of Object.entries(settings)) {
     if (SKIP_CONF_KEYS.has(key)) continue;
+    if (!ALLOWED_CONF_KEYS.has(key)) continue;
     if (value === "" || value === undefined || value === null) continue;
 
     if (Array.isArray(value)) {
@@ -77,6 +92,16 @@ settingsRouter.get("/", async (_req, res) => {
 // POST save settings
 settingsRouter.post("/", async (req, res) => {
   const settings = req.body as Record<string, unknown>;
+
+  // Reject unknown config keys
+  const invalidKeys = Object.keys(settings).filter(
+    (k) => !ALLOWED_CONF_KEYS.has(k) && !SKIP_CONF_KEYS.has(k)
+  );
+  if (invalidKeys.length > 0) {
+    res.status(400).json({ error: `Invalid config keys: ${invalidKeys.join(", ")}` });
+    return;
+  }
+
   const applied: string[] = [];
   const errors: string[] = [];
   let configWritten = false;
@@ -103,6 +128,10 @@ settingsRouter.post("/", async (req, res) => {
   // Add new addnodes
   if (addnodes && addnodes.length > 0) {
     for (const addr of addnodes) {
+      if (!ADDR_PATTERN.test(addr)) {
+        errors.push(`Invalid address format: ${addr}`);
+        continue;
+      }
       try {
         await rpcCall("addnode", [addr, "add"]);
         applied.push(`addnode ${addr}`);
@@ -112,7 +141,8 @@ settingsRouter.post("/", async (req, res) => {
         if (msg.includes("already added") || msg.includes("already connected")) {
           applied.push(`addnode ${addr} (already connected)`);
         } else {
-          errors.push(`addnode ${addr}: ${msg}`);
+          console.error(`[settings] addnode ${addr} failed:`, err);
+          errors.push(`addnode ${addr}: failed`);
         }
       }
     }
@@ -126,8 +156,8 @@ settingsRouter.post("/", async (req, res) => {
     configWritten = true;
     applied.push("prometheus.conf written");
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    errors.push(`Config write failed: ${msg}`);
+    console.error("[settings] config write error:", err);
+    errors.push("Config write failed");
   }
 
   res.json({
@@ -136,4 +166,22 @@ settingsRouter.post("/", async (req, res) => {
     config_written: configWritten,
     errors,
   });
+});
+
+// GET /credentials — return RPC cookie for Sovereign Controls display
+settingsRouter.get("/credentials", (_req, res) => {
+  let rpcUser = "";
+  let rpcPassword = "";
+  try {
+    const cookiePath = `${DATA_DIR}/.cookie`;
+    const cookie = fs.readFileSync(cookiePath, "utf8").trim();
+    const colonIdx = cookie.indexOf(":");
+    if (colonIdx !== -1) {
+      rpcUser = cookie.slice(0, colonIdx);
+      rpcPassword = cookie.slice(colonIdx + 1);
+    }
+  } catch {
+    rpcPassword = "Node not running";
+  }
+  res.json({ rpcUser, rpcPassword });
 });

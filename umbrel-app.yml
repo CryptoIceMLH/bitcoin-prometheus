@@ -1,5 +1,7 @@
-manifestVersion: 1
-id: bitcoin
+manifestVersion: 1.1
+id: btc-prometheus
+implements:
+  - bitcoin
 name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: prometheus128.jpg

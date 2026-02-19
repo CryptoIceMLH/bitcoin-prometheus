@@ -4,7 +4,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: prometheus128.jpg
 category: bitcoin
-version: "0.1.0"
+version: "0.1.1"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -19,8 +19,8 @@ gallery:
   - 1.jpg
   - 2.jpg
 releaseNotes: >-
-  Initial release of BTC-Prometheus v0.1.0 with custom web UI, dashboard,
-  and Sovereign Controls panel.
+  Fix node startup permissions on Umbrel, remove dashboard login requirement,
+  direct access to UI without password.
 dependencies: []
 path: ""
 defaultUsername: ""

@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: https://raw.githubusercontent.com/CryptoIceMLH/bitcoin-prometheus/main/cryptoice-btc-prometheus/prometheus128.jpg
 category: bitcoin
-version: "0.1.2"
+version: "0.1.3"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -19,9 +19,9 @@ repo: https://github.com/CryptoIceMLH/bitcoin-prometheus
 support: https://github.com/CryptoIceMLH/bitcoin-prometheus/issues
 gallery: []
 releaseNotes: >-
-  Security hardening: remove auth stack, sanitize error responses, add config
-  key allowlist, pin Docker base images, replace ip-api.com with local GeoIP,
-  add user-settable node location via draggable map pin.
+  Match standard RPC auth pattern (rpcauth.py), add exports.sh for Umbrel env
+  var generation, add APP_BITCOIN_* compatibility aliases for dependent apps,
+  entrypoint generates config from env vars.
 dependencies: []
 path: ""
 defaultUsername: ""

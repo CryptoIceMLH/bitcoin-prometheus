@@ -168,20 +168,22 @@ settingsRouter.post("/", async (req, res) => {
   });
 });
 
-// GET /credentials — return RPC cookie for Sovereign Controls display
+// GET /credentials — return RPC credentials for Sovereign Controls display
 settingsRouter.get("/credentials", (_req, res) => {
-  let rpcUser = "";
-  let rpcPassword = "";
-  try {
-    const cookiePath = `${DATA_DIR}/.cookie`;
-    const cookie = fs.readFileSync(cookiePath, "utf8").trim();
-    const colonIdx = cookie.indexOf(":");
-    if (colonIdx !== -1) {
-      rpcUser = cookie.slice(0, colonIdx);
-      rpcPassword = cookie.slice(colonIdx + 1);
+  let rpcUser = process.env.RPC_USER || "";
+  let rpcPassword = process.env.RPC_PASS || "";
+  if (!rpcUser || !rpcPassword) {
+    try {
+      const cookiePath = `${DATA_DIR}/.cookie`;
+      const cookie = fs.readFileSync(cookiePath, "utf8").trim();
+      const colonIdx = cookie.indexOf(":");
+      if (colonIdx !== -1) {
+        rpcUser = cookie.slice(0, colonIdx);
+        rpcPassword = cookie.slice(colonIdx + 1);
+      }
+    } catch {
+      rpcPassword = "Node not running";
     }
-  } catch {
-    rpcPassword = "Node not running";
   }
   res.json({ rpcUser, rpcPassword });
 });

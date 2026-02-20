@@ -1,7 +1,7 @@
 services:
   app_proxy:
     environment:
-      APP_HOST: ui-frontend
+      APP_HOST: cryptoice-btc-prometheus_ui-frontend_1
       APP_PORT: 80
 
   prometheus-node:

@@ -69,6 +69,13 @@ settingsRouter.get("/", async (_req, res) => {
     // Read saved settings from config file (includes dbcache, addnode, etc.)
     const confSettings = parseConfFile();
 
+    // Filter confSettings to only include whitelisted keys (prevents dev server cruft from leaking to frontend)
+    const knownConf = Object.fromEntries(
+      Object.entries(confSettings).filter(
+        ([k]) => ALLOWED_CONF_KEYS.has(k) || k === "addnode"
+      )
+    );
+
     // Read addnode from RPC (runtime-added nodes not yet in config)
     let rpcAddnodes: string[] = [];
     try {
@@ -83,7 +90,7 @@ settingsRouter.get("/", async (_req, res) => {
     const allAddnodes = [...new Set([...confAddnodes, ...rpcAddnodes])];
 
     // Layer: defaults < config file < RPC policy (most authoritative)
-    res.json({ ...DEFAULTS, ...confSettings, ...policy, addnode: allAddnodes });
+    res.json({ ...DEFAULTS, ...knownConf, ...policy, addnode: allAddnodes });
   } catch (err: unknown) {
     res.json(DEFAULTS);
   }

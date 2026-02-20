@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: https://raw.githubusercontent.com/CryptoIceMLH/bitcoin-prometheus/main/cryptoice-btc-prometheus/prometheus128.jpg
 category: bitcoin
-version: "0.1.3"
+version: "0.1.4"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision

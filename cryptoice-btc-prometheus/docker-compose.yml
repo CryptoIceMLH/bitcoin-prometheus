@@ -53,9 +53,3 @@ services:
     image: peterdavehello/tor-socks-proxy:latest@sha256:1a21ef796e1c8929d3fac4f06dabb1c4e0734fd0b733a54d5d7ef767bd0eaa85
     restart: unless-stopped
 
-networks:
-  default:
-    ipam:
-      driver: default
-      config:
-        - subnet: 10.21.22.0/24

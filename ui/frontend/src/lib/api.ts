@@ -41,8 +41,10 @@ export interface NetworkStatus {
   tor_reachable: boolean;
   listen: boolean;
   network_active: boolean;
-  onion_peers: number;
   clearnet_peers: number;
+  p2p_peers: number;
+  onion_peers: number;
+  i2p_peers: number;
   total_peers: number;
   blocksonly: boolean;
 }

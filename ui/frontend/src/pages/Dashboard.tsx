@@ -122,7 +122,9 @@ function EternalFlame({
   // --- Connections Donut ---
   const totalPeers = node?.connections ?? peers.length;
   const clearnetCount = network?.clearnet_peers ?? node?.connections_out ?? 0;
+  const p2pCount = network?.p2p_peers ?? 0;
   const onionCount = network?.onion_peers ?? 0;
+  const i2pCount = network?.i2p_peers ?? 0;
   const donutR = 52;
   const donutStroke = 12;
   const donutC = 2 * Math.PI * donutR;
@@ -286,6 +288,12 @@ function EternalFlame({
             </div>
             <div className="flex items-center justify-between gap-6">
               <span className="flex items-center gap-2 text-xs text-gray-300">
+                <span className="w-2 h-2 rounded-full bg-blue-400" /> P2P
+              </span>
+              <span className="text-xs font-semibold text-blue-400 tabular-nums">{p2pCount}</span>
+            </div>
+            <div className="flex items-center justify-between gap-6">
+              <span className="flex items-center gap-2 text-xs text-gray-300">
                 <span className="w-2 h-2 rounded-full bg-purple-500" /> Tor
               </span>
               <span className="text-xs font-semibold text-purple-400 tabular-nums">{onionCount}</span>
@@ -294,7 +302,7 @@ function EternalFlame({
               <span className="flex items-center gap-2 text-xs text-gray-500">
                 <span className="w-2 h-2 rounded-full bg-gray-600" /> I2P
               </span>
-              <span className="text-xs font-semibold text-gray-600 tabular-nums">0</span>
+              <span className="text-xs font-semibold text-gray-600 tabular-nums">{i2pCount}</span>
             </div>
           </div>
         </div>

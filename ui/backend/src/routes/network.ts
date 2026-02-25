@@ -41,7 +41,19 @@ function isPrivateIP(ip: string): boolean {
 networkRouter.get("/", async (_req, res) => {
   try {
     const privacy = (await rpcCall("getprivacystatus")) as Record<string, unknown>;
-    res.json(privacy);
+    // Also count p2p (manual) peers and i2p peers
+    try {
+      const peerInfo = (await rpcCall("getpeerinfo")) as Array<Record<string, unknown>>;
+      let p2pPeers = 0;
+      let i2pPeers = 0;
+      for (const peer of peerInfo) {
+        if (peer.connection_type === "manual") p2pPeers++;
+        if (peer.network === "i2p") i2pPeers++;
+      }
+      res.json({ ...privacy, p2p_peers: p2pPeers, i2p_peers: i2pPeers });
+    } catch {
+      res.json(privacy);
+    }
   } catch (err: unknown) {
     // Fallback
     try {
@@ -50,13 +62,17 @@ networkRouter.get("/", async (_req, res) => {
 
       let onionPeers = 0;
       let clearnetPeers = 0;
+      let p2pPeers = 0;
+      let i2pPeers = 0;
       for (const peer of peerInfo) {
-        const addr = String(peer.addr || "");
-        if (addr.endsWith(".onion") || addr.includes(".onion:")) {
+        if (peer.network === "onion") {
           onionPeers++;
+        } else if (peer.network === "i2p") {
+          i2pPeers++;
         } else {
           clearnetPeers++;
         }
+        if (peer.connection_type === "manual") p2pPeers++;
       }
 
       res.json({
@@ -65,6 +81,8 @@ networkRouter.get("/", async (_req, res) => {
         network_active: networkInfo.networkactive,
         onion_peers: onionPeers,
         clearnet_peers: clearnetPeers,
+        p2p_peers: p2pPeers,
+        i2p_peers: i2pPeers,
         total_peers: peerInfo.length,
         blocksonly: false,
       });

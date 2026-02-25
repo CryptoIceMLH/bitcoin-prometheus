@@ -76,13 +76,9 @@ static bool PrometheusMetricsHandler(HTTPRequest* req, const std::string& strURI
             // Calculate total blockchain disk size by summing all block files
             uint64_t chain_size = 0;
             {
-                int nLastBlockFile = 0;
-                chainman.m_blockman.ReadLastBlockFile(nLastBlockFile);
-                for (int i = 0; i <= nLastBlockFile; i++) {
-                    CBlockFileInfo info;
-                    if (chainman.m_blockman.ReadBlockFileInfo(i, info)) {
-                        chain_size += info.nSize;
-                    }
+                int i = 0;
+                while (const CBlockFileInfo* fi = chainman.m_blockman.GetBlockFileInfo(i++)) {
+                    chain_size += fi->nSize;
                 }
             }
             metrics << FormatGauge("prometheus_chain_size_bytes", "Total size of the block and undo files on disk", (int64_t)chain_size);

@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     ports:
       - "8333:8333"   # P2P
-      - "127.0.0.1:8332:8332"   # RPC + Metrics (/metrics endpoint)
+      - "8332:8332"   # RPC + Metrics (/metrics endpoint)
     volumes:
       - /home/prometheus/.bitcoin:/home/bitcoin/.bitcoin
     command:

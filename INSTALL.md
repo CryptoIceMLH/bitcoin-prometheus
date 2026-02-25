@@ -109,7 +109,7 @@ docker compose build --no-cache ui-backend && docker compose up -d ui-backend
 docker compose build --no-cache prometheus-node && docker compose up -d prometheus-node
 
 # Check blockchain sync progress via RPC
-docker exec btc-prometheus prometheus-cli -rpcuser=prometheus -rpcpassword=changeme getblockchaininfo
+docker exec btc-prometheus bitcoin-cli -rpcuser=prometheus -rpcpassword=changeme getblockchaininfo
 ```
 
 ## Architecture

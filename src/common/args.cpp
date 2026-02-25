@@ -36,7 +36,7 @@
 #include <utility>
 #include <variant>
 
-const char * const BITCOIN_CONF_FILENAME = "prometheus.conf";
+const char * const BITCOIN_CONF_FILENAME = "bitcoin.conf";
 const char * const BITCOIN_SETTINGS_FILENAME = "settings.json";
 
 ArgsManager gArgs;
@@ -722,11 +722,11 @@ bool HasTestOption(const ArgsManager& args, const std::string& test_option)
 
 fs::path GetDefaultDataDir()
 {
-    // Windows: %APPDATA%\Prometheus
-    // macOS: ~/Library/Application Support/Prometheus
-    // Unix-like: ~/.prometheus
+    // Windows: %APPDATA%\Bitcoin
+    // macOS: ~/Library/Application Support/Bitcoin
+    // Unix-like: ~/.bitcoin
 #ifdef WIN32
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "Prometheus";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "Bitcoin";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -736,10 +736,10 @@ fs::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef __APPLE__
     // macOS
-    return pathRet / "Library/Application Support/Prometheus";
+    return pathRet / "Library/Application Support/Bitcoin";
 #else
     // Unix-like
-    return pathRet / ".prometheus";
+    return pathRet / ".bitcoin";
 #endif
 #endif
 }

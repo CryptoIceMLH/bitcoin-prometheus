@@ -72,7 +72,14 @@ static bool PrometheusMetricsHandler(HTTPRequest* req, const std::string& strURI
             metrics << FormatCounter("prometheus_blocks_total", "Total blocks in the active chain", tip->nHeight);
             metrics << FormatGauge("prometheus_block_timestamp", "Timestamp of the chain tip block", tip->GetBlockTime());
             metrics << FormatGaugeDouble("prometheus_difficulty", "Current mining difficulty", GetDifficulty(*tip));
-            metrics << FormatGauge("prometheus_chain_size_bytes", "Estimated size of the block and undo files on disk", (int64_t)tip->nDataPos);
+
+            // Calculate total blockchain disk size by summing all block files
+            uint64_t chain_size = 0;
+            const auto& blockman = chainman.m_blockman;
+            for (int i = 0; i <= blockman.m_last_blockfile; i++) {
+                chain_size += blockman.m_blockfile_info[i].nSize;
+            }
+            metrics << FormatGauge("prometheus_chain_size_bytes", "Total size of the block and undo files on disk", (int64_t)chain_size);
         }
 
         double verification_progress = chainman.GuessVerificationProgress(tip);

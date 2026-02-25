@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { api, NodeInfo, NetworkStatus, HealthInfo, Peer } from "../lib/api";
+import { api, NodeInfo, NetworkStatus, HealthInfo, Peer, MempoolStats } from "../lib/api";
 import { createFireMap, FireMapRenderer } from "../lib/fireMap";
 
 // ---------------------------------------------------------------------------
@@ -453,6 +453,80 @@ function ChainStats({
 }
 
 // ---------------------------------------------------------------------------
+// [D.5] MempoolCard — Mempool fee and transaction stats
+// ---------------------------------------------------------------------------
+
+function MempoolCard({
+  mempool,
+  expanded,
+  onToggle,
+}: {
+  mempool: MempoolStats | null;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  if (!mempool) return null;
+
+  const rows: { label: string; value: string; color?: string }[] = [
+    { label: "Transactions", value: formatNumber(mempool.size) },
+    { label: "Size", value: formatBytes(mempool.bytes) },
+    {
+      label: "Total Fees (BTC)",
+      value: (mempool.total_fee / 1e8).toFixed(4),
+      color: "text-fire-amber",
+    },
+    {
+      label: "Min Fee Rate",
+      value: mempool.mempoolminfee > 0 ? `${(mempool.mempoolminfee * 1e5).toFixed(0)} sat/vB` : "---",
+      color: "text-green-400",
+    },
+    {
+      label: "Unbroadcast",
+      value: formatNumber(mempool.unbroadcastcount),
+      color: mempool.unbroadcastcount > 0 ? "text-fire-orange" : "text-gray-400",
+    },
+  ];
+
+  return (
+    <div className="glass-card glass-card-fire-top p-5">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <h3 className="text-sm font-semibold text-gray-300">Mempool Stats</h3>
+        <svg
+          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+            expanded ? "rotate-180" : ""
+          }`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="mt-3">
+          {rows.map((row) => (
+            <div key={row.label} className="stat-row px-1">
+              <span className="text-xs text-gray-500">{row.label}</span>
+              <span
+                className={`text-xs font-medium tabular-nums ${
+                  row.color || "text-gray-200"
+                }`}
+              >
+                {row.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // [E] ActivityFeed — Vertical live event feed
 // ---------------------------------------------------------------------------
 
@@ -613,6 +687,8 @@ export default function Dashboard() {
   const [peersExpanded, setPeersExpanded] = useState(false);
   const [activityExpanded, setActivityExpanded] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(true);
+  const [mempoolExpanded, setMempoolExpanded] = useState(false);
+  const [mempool, setMempool] = useState<MempoolStats | null>(null);
   const prevBlockHeight = useRef<number | null>(null);
   const prevPeerCount = useRef<number | null>(null);
   const prevMempoolSize = useRef<number | null>(null);
@@ -628,16 +704,18 @@ export default function Dashboard() {
 
   const fetchAll = async () => {
     try {
-      const [n, net, h, p] = await Promise.all([
+      const [n, net, h, p, m] = await Promise.all([
         api.getNode(),
         api.getNetwork(),
         api.getHealth(),
         api.getPeers().catch(() => [] as Peer[]),
+        api.getMempool().catch(() => null),
       ]);
       setNode(n);
       setNetwork(net);
       setHealth(h);
       setPeers(p);
+      setMempool(m);
       setError(null);
 
       // Live speed calculation
@@ -776,6 +854,13 @@ export default function Dashboard() {
         sentSpeed={sentSpeed}
         expanded={statsExpanded}
         onToggle={() => setStatsExpanded(!statsExpanded)}
+      />
+
+      {/* [D.5] Mempool Stats */}
+      <MempoolCard
+        mempool={mempool}
+        expanded={mempoolExpanded}
+        onToggle={() => setMempoolExpanded(!mempoolExpanded)}
       />
 
       {/* [E] Live Activity Feed */}

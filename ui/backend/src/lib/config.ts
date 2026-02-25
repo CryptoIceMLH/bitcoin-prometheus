@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 export const DATA_DIR = process.env.DATA_DIR || "/data";
-export const CONF_FILE = path.join(DATA_DIR, "prometheus.conf");
+export const CONF_FILE = path.join(DATA_DIR, "bitcoin.conf");
 
 export const DEFAULTS: Record<string, unknown> = {
   datacarrier: true,

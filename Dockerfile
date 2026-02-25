@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3t64 ca-certificates python3 \
   && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -r prometheus && useradd -r -g prometheus -m prometheus
+RUN groupadd -r bitcoin && useradd -r -g bitcoin -m bitcoin
 
 COPY --from=builder /install/bin/ /usr/local/bin/
 COPY scripts/rpcauth.py /usr/local/bin/rpcauth.py
@@ -36,12 +36,12 @@ RUN chmod +x /usr/local/bin/rpcauth.py
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-WORKDIR /home/prometheus
+WORKDIR /home/bitcoin
 
 # P2P, RPC (metrics at /metrics on RPC port)
 EXPOSE 8333 8332
 
-VOLUME ["/home/prometheus/.prometheus"]
+VOLUME ["/home/bitcoin/.bitcoin"]
 
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["-printtoconsole"]

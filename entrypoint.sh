@@ -1,12 +1,19 @@
 #!/bin/sh
 # BTC-Prometheus node entrypoint
 
-DATA_DIR="/home/prometheus/.prometheus"
-CONF_FILE="${DATA_DIR}/prometheus.conf"
+DATA_DIR="/home/bitcoin/.bitcoin"
+CONF_FILE="${DATA_DIR}/bitcoin.conf"
 
-# Ensure data directory exists and is owned by prometheus
+# Auto-migrate from old .prometheus path if upgrading from v0.1.x
+OLD_DIR="/home/bitcoin/.prometheus"
+if [ -d "$OLD_DIR" ] && [ ! -d "$DATA_DIR" ]; then
+  echo "Migrating data from $OLD_DIR to $DATA_DIR..."
+  mv "$OLD_DIR" "$DATA_DIR"
+fi
+
+# Ensure data directory exists and is owned by bitcoin
 mkdir -p "$DATA_DIR"
-chown -R prometheus:prometheus "$DATA_DIR"
+chown -R bitcoin:bitcoin "$DATA_DIR"
 
 # Create default config on first run if none exists
 if [ ! -f "$CONF_FILE" ]; then
@@ -15,7 +22,7 @@ if [ ! -f "$CONF_FILE" ]; then
 server=1
 txindex=0
 CONFEOF
-  chown prometheus:prometheus "$CONF_FILE"
+  chown bitcoin:bitcoin "$CONF_FILE"
 fi
 
 # Remove any legacy rpcuser/rpcpassword so cookie auth activates when no RPC env vars set
@@ -46,6 +53,16 @@ sed -i '/^rpcbind=/d' "$CONF_FILE"
 echo "rpcallowip=0.0.0.0/0" >> "$CONF_FILE"
 echo "rpcbind=0.0.0.0" >> "$CONF_FILE"
 
+# Make .cookie world-readable so dependent apps (electrs, Fulcrum) can read it
+sed -i '/^rpccookieperms=/d' "$CONF_FILE"
+echo "rpccookieperms=all" >> "$CONF_FILE"
+
+# Tor proxy support
+if [ -n "$TOR_PROXY" ]; then
+  sed -i '/^proxy=/d' "$CONF_FILE"
+  echo "proxy=${TOR_PROXY}" >> "$CONF_FILE"
+fi
+
 # ZMQ endpoints
 if [ -n "$ZMQ_RAWBLOCK_PORT" ]; then
   sed -i '/^zmqpubrawblock=/d' "$CONF_FILE"
@@ -72,10 +89,7 @@ if [ -n "$ZMQ_SEQUENCE_PORT" ]; then
   echo "zmqpubsequence=tcp://0.0.0.0:${ZMQ_SEQUENCE_PORT}" >> "$CONF_FILE"
 fi
 
-chown prometheus:prometheus "$CONF_FILE"
+chown bitcoin:bitcoin "$CONF_FILE"
 
-# Make .cookie readable by other containers (e.g., electrs on Umbrel)
-chmod 644 "$DATA_DIR"/.cookie 2>/dev/null || true
-
-# Drop to prometheus user and start the node
-exec su -s /bin/sh prometheus -c "exec prometheusd -conf=\"$CONF_FILE\" \"\$@\"" -- "$@"
+# Drop to bitcoin user and start the node
+exec su -s /bin/sh bitcoin -c "exec prometheusd -conf=\"$CONF_FILE\" \"\$@\"" -- "$@"

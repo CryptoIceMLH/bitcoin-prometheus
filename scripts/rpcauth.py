@@ -20,7 +20,7 @@ def generate_password():
     return urlsafe_b64encode(urandom(32)).decode('utf-8')
 
 def password_to_hmac(salt, password):
-    m = hmac.new(bytearray(salt, 'utf-8'), bytearray(password, 'utf-8'), 'SHA256')
+    m = hmac.HMAC(bytearray(salt, 'utf-8'), bytearray(password, 'utf-8'), digestmod='sha256')
     return m.hexdigest()
 
 def main():

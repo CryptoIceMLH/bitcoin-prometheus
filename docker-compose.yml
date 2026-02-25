@@ -7,7 +7,7 @@ services:
       - "8333:8333"   # P2P
       - "127.0.0.1:8332:8332"   # RPC + Metrics (/metrics endpoint)
     volumes:
-      - bitcoin-data:/home/bitcoin/.bitcoin
+      - /home/prometheus/.bitcoin:/home/bitcoin/.bitcoin
     command:
       - -printtoconsole
 
@@ -21,7 +21,7 @@ services:
       - DATA_DIR=/data
       - CORS_ORIGIN=http://localhost:3000
     volumes:
-      - bitcoin-data:/data
+      - /home/prometheus/.bitcoin:/data
     depends_on:
       - prometheus-node
 
@@ -38,6 +38,3 @@ services:
     image: peterdavehello/tor-socks-proxy:latest@sha256:1a21ef796e1c8929d3fac4f06dabb1c4e0734fd0b733a54d5d7ef767bd0eaa85
     container_name: btc-prometheus-tor
     restart: unless-stopped
-
-volumes:
-  bitcoin-data:

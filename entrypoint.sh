@@ -67,7 +67,15 @@ if [ -n "$ZMQ_HASHTX_PORT" ]; then
   echo "zmqpubhashtx=tcp://0.0.0.0:${ZMQ_HASHTX_PORT}" >> "$CONF_FILE"
 fi
 
+if [ -n "$ZMQ_SEQUENCE_PORT" ]; then
+  sed -i '/^zmqpubsequence=/d' "$CONF_FILE"
+  echo "zmqpubsequence=tcp://0.0.0.0:${ZMQ_SEQUENCE_PORT}" >> "$CONF_FILE"
+fi
+
 chown prometheus:prometheus "$CONF_FILE"
+
+# Make .cookie readable by other containers (e.g., electrs on Umbrel)
+chmod 644 "$DATA_DIR"/.cookie 2>/dev/null || true
 
 # Drop to prometheus user and start the node
 exec su -s /bin/sh prometheus -c "exec prometheusd -conf=\"$CONF_FILE\" \"\$@\"" -- "$@"

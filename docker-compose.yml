@@ -8,7 +8,9 @@ services:
       # RPC port bound to localhost only — not exposed to all interfaces
       - "127.0.0.1:8332:8332"   # RPC + Metrics (/metrics endpoint)
     volumes:
-      - prometheus-data:/home/prometheus/.prometheus
+      - /home/prometheus/.bitcoin:/home/bitcoin/.bitcoin
+    environment:
+      TOR_PROXY: "socks5://tor-proxy:9050"
     command:
       - -printtoconsole
       - -rpcallowip=0.0.0.0/0
@@ -24,7 +26,7 @@ services:
       - DATA_DIR=/data
       - CORS_ORIGIN=http://localhost:3000
     volumes:
-      - prometheus-data:/data
+      - /home/prometheus/.bitcoin:/data
     depends_on:
       - prometheus-node
 
@@ -41,6 +43,3 @@ services:
     image: peterdavehello/tor-socks-proxy:latest@sha256:1a21ef796e1c8929d3fac4f06dabb1c4e0734fd0b733a54d5d7ef767bd0eaa85
     container_name: btc-prometheus-tor
     restart: unless-stopped
-
-volumes:
-  prometheus-data:

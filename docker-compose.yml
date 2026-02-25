@@ -3,6 +3,8 @@ services:
     build: .
     container_name: btc-prometheus
     restart: unless-stopped
+    environment:
+      - RPC_PORT=8332
     ports:
       - "8333:8333"   # P2P
       - "8332:8332"   # RPC + Metrics (/metrics endpoint)

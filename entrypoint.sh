@@ -57,10 +57,11 @@ echo "rpcbind=0.0.0.0" >> "$CONF_FILE"
 sed -i '/^rpccookieperms=/d' "$CONF_FILE"
 echo "rpccookieperms=all" >> "$CONF_FILE"
 
-# Tor proxy support
+# Tor proxy support — strip socks5:// prefix if present (Bitcoin Core expects host:port)
 if [ -n "$TOR_PROXY" ]; then
   sed -i '/^proxy=/d' "$CONF_FILE"
-  echo "proxy=${TOR_PROXY}" >> "$CONF_FILE"
+  TOR_PROXY_ADDR="${TOR_PROXY#socks5://}"
+  echo "proxy=${TOR_PROXY_ADDR}" >> "$CONF_FILE"
 fi
 
 # ZMQ endpoints

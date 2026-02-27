@@ -93,12 +93,118 @@ docker push ghcr.io/cryptoicemlh/btc-prometheus-ui:vX.X.X
 
 ---
 
-## v0.2.1 Changes
+## Git Workflow (Important!)
+
+**Branch Structure:**
+- **Local:** `master` — development branch
+- **Remote:** `origin/main` — production branch (what Umbrel watches)
+- Only `main` exists on GitHub; no `master` branch on remote
+
+**When pushing changes to Umbrel:**
+
+1. **Edit files locally on `master`**
+   ```bash
+   git checkout master
+   # make changes, test locally
+   ```
+
+2. **Commit and push to `main` on GitHub**
+   ```bash
+   git add <files>
+   git commit -m "message"
+   git push origin master:main    # pushes local master to remote main
+   ```
+
+3. **Tag and push images to GHCR** (from dev server after testing)
+   ```bash
+   # On 192.168.1.114 after docker compose build:
+   docker tag btc-prometheus-prometheus-node ghcr.io/cryptoicemlh/btc-prometheus-node:vX.X.X
+   docker tag btc-prometheus-ui-backend ghcr.io/cryptoicemlh/btc-prometheus-api:vX.X.X
+   docker tag btc-prometheus-ui-frontend ghcr.io/cryptoicemlh/btc-prometheus-ui:vX.X.X
+
+   docker push ghcr.io/cryptoicemlh/btc-prometheus-node:vX.X.X
+   docker push ghcr.io/cryptoicemlh/btc-prometheus-api:vX.X.X
+   docker push ghcr.io/cryptoicemlh/btc-prometheus-ui:vX.X.X
+   ```
+
+4. **Update Umbrel** (on 192.168.1.213)
+   ```bash
+   sudo systemctl restart umbrel.service
+   ```
+   This will pull the new images from GHCR based on updated `cryptoice-btc-prometheus/docker-compose.yml` on `main`.
+
+---
+
+## Dev Server Rebuild Workflow
+
+When code changes require a rebuild (e.g., entrypoint.sh, source code):
+
+```bash
+# 1. Stop existing containers (keeps blockchain data)
+docker compose down
+
+# 2. Pull latest from GitHub main
+git fetch origin
+git merge origin/main
+
+# 3. Rebuild images fresh (no cache)
+docker compose build --no-cache
+
+# 4. Start containers
+docker compose up -d
+
+# 5. Monitor build progress
+docker logs -f btc-prometheus
+```
+
+Blockchain data at `/home/prometheus/.bitcoin/` is never lost.
+
+---
+
+## Version Bump Checklist
+
+When bumping version (e.g., v0.2.1 → v0.2.2):
+
+- [ ] `CMakeLists.txt` — `CLIENT_VERSION_BUILD`
+- [ ] `umbrel-app.yml` (root) — `version:` field + `releaseNotes:`
+- [ ] `cryptoice-btc-prometheus/umbrel-app.yml` — `version:` field + `releaseNotes:`
+- [ ] **`cryptoice-btc-prometheus/docker-compose.yml` — update ALL image tags** ⚠️ **CRITICAL**
+- [ ] `ui/frontend/src/components/Layout.tsx` — version display
+- [ ] Commit to `master`
+- [ ] Push `master:main` to GitHub
+- [ ] Rebuild on dev server with `docker compose build --no-cache`
+- [ ] Test on dev server
+- [ ] Tag and push images to GHCR with new version
+- [ ] Update Umbrel with `sudo systemctl restart umbrel.service`
+
+**⚠️ CRITICAL: `cryptoice-btc-prometheus/docker-compose.yml` image tags MUST be updated!**
+
+The Umbrel deployment file contains hardcoded image version tags:
+```yaml
+  prometheus-node:
+    image: ghcr.io/cryptoicemlh/btc-prometheus-node:vX.X.X   # ← UPDATE THIS
+  ui-backend:
+    image: ghcr.io/cryptoicemlh/btc-prometheus-api:vX.X.X   # ← UPDATE THIS
+  ui-frontend:
+    image: ghcr.io/cryptoicemlh/btc-prometheus-ui:vX.X.X    # ← UPDATE THIS
+```
+
+**If you skip this step:**
+- Umbrel will pull OLD images from GHCR (wrong version)
+- New code changes won't be deployed
+- All the development work goes to waste
+- You'll debug for hours wondering why nothing changed
+
+Update all three image tags to match the new version number BEFORE pushing to GitHub.
+
+---
+
+## v0.2.2 Changes
 
 **Fixed Issues:**
-- ✅ Proxy clearing: entrypoint.sh now always removes old proxy setting before setting new one
-- ✅ RPC exposure: RPC port now bound to `0.0.0.0:8332` for Docker network access
-- ✅ Data persistence: Using host bind mount (`/home/prometheus/.bitcoin`) instead of Docker volumes
+- ✅ JSON-RPC 1.1 compatibility: Electrs and Mempool now work (prometheusd accepts "1.1" as legacy)
+- ✅ P2P port binding: Fixed inbound peer connections (env var P2P_PORT now propagates to bitcoin.conf)
+- ✅ Tor hidden service wiring: TOR_CONTROL env var enables inbound Tor (listenonion) without forcing outbound routing
 
 **Configuration Management:**
 - All settings managed via environment variables in entrypoint.sh

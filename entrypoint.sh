@@ -25,6 +25,10 @@ CONFEOF
   chown bitcoin:bitcoin "$CONF_FILE"
 fi
 
+# Always ensure server=1 is set (required for RPC — may be missing if config was restored from backup)
+sed -i '/^server=/d' "$CONF_FILE"
+echo "server=1" >> "$CONF_FILE"
+
 # Remove any legacy rpcuser/rpcpassword so cookie auth activates when no RPC env vars set
 sed -i '/^rpcuser=/d' "$CONF_FILE"
 sed -i '/^rpcpassword=/d' "$CONF_FILE"

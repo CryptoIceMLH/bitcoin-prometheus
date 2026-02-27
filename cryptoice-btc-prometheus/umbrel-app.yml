@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: https://raw.githubusercontent.com/CryptoIceMLH/bitcoin-prometheus/main/cryptoice-btc-prometheus/prometheus128.jpg
 category: bitcoin
-version: "0.2.5"
+version: "0.2.6"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -19,6 +19,9 @@ repo: https://github.com/CryptoIceMLH/bitcoin-prometheus
 support: https://github.com/CryptoIceMLH/bitcoin-prometheus/issues
 gallery: []
 releaseNotes: >-
+  v0.2.6: Fix RPC server=1 always enforced on startup. Restoring blockchain data from backup
+  was leaving RPC disabled in bitcoin.conf. Electrs can now authenticate properly.
+
   v0.2.5: Fix node IP to match Bitcoin Core standard (10.21.21.8). Node now on correct Docker subnet
   with all Umbrel apps — fixes Electrs connectivity. Subnet mismatch prevented peer communication.
 

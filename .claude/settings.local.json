@@ -19,8 +19,8 @@
       "Bash(ssh -i ~/.ssh/id_rsa umbrel@192.168.1.213 'find ~/umbrel/app-data/electrs -type f -name \"\"*.log\"\" -o -name \"\"*.txt\"\" 2>/dev/null | head -10')",
       "Bash(ssh -i ~/.ssh/id_rsa umbrel@192.168.1.213 'grep -i \"\"connect\\\\|rpc\\\\|error\\\\|fail\"\" ~/umbrel/app-data/electrs/data/electrs/db/bitcoin/LOG 2>/dev/null | head -20')",
       "Bash(ssh -i ~/.ssh/id_rsa umbrel@192.168.1.213 'find ~/umbrel/app-data/electrs -name \"\"stdout\"\" -o -name \"\"stderr\"\" -o -name \"\"*.log\"\" 2>/dev/null | grep -v bitcoin | head -5')",
-      "Bash(ssh -i ~/.ssh/id_rsa umbrel@192.168.1.213 'telnet 10.21.22.20 8332 </dev/null 2>&1 | head -5')",
-      "Bash(ssh -i ~/.ssh/id_rsa umbrel@192.168.1.213 'timeout 2 bash -c \"\"</dev/tcp/10.21.22.20/8332\"\" 2>&1 && echo \"\"Connected\"\" || echo \"\"Connection failed or timeout\"\"')",
+      "Bash(ssh -i ~/.ssh/id_rsa umbrel@192.168.1.213 'telnet 10.21.21.8 8332 </dev/null 2>&1 | head -5')",
+      "Bash(ssh -i ~/.ssh/id_rsa umbrel@192.168.1.213 'timeout 2 bash -c \"\"</dev/tcp/10.21.21.8/8332\"\" 2>&1 && echo \"\"Connected\"\" || echo \"\"Connection failed or timeout\"\"')",
       "Bash(ssh -i ~/.ssh/id_rsa umbrel@192.168.1.213 'grep -A 20 \"\"ELECTRS_DAEMON\"\" ~/umbrel/app-data/electrs/docker-compose.yml')",
       "Bash(ssh -i ~/.ssh/id_rsa umbrel@192.168.1.213 'grep \"\"APP_BITCOIN\"\" ~/umbrel/app-data/electrs/../cryptoice-btc-prometheus/.env 2>/dev/null || grep \"\"APP_BITCOIN\"\" ~/umbrel/app-data/electrs/exports.sh 2>/dev/null || env | grep APP_BITCOIN | head -10')"
     ]

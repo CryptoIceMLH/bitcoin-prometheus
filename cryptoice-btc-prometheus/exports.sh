@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Static IP for the node on the Umbrel network
-export APP_CRYPTOICE_BTC_PROMETHEUS_NODE_IP="10.21.22.20"
+export APP_CRYPTOICE_BTC_PROMETHEUS_NODE_IP="10.21.21.8"
 
 # Ports — aligned with standard Bitcoin Core
 export APP_CRYPTOICE_BTC_PROMETHEUS_RPC_PORT="8332"

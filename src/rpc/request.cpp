@@ -218,7 +218,7 @@ void JSONRPCRequest::parse(const UniValue& valRequest)
         // The "jsonrpc" key was added in the 2.0 spec, but some older documentation
         // incorrectly included {"jsonrpc":"1.0"} in a request object, so we
         // maintain that for backwards compatibility.
-        if (jsonrpc_version.get_str() == "1.0") {
+        if (jsonrpc_version.get_str() == "1.0" || jsonrpc_version.get_str() == "1.1") {
             m_json_version = JSONRPCVersion::V1_LEGACY;
         } else if (jsonrpc_version.get_str() == "2.0") {
             m_json_version = JSONRPCVersion::V2;

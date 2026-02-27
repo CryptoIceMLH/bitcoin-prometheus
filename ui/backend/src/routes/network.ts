@@ -1,6 +1,6 @@
 import { Router } from "express";
 import geoip from "geoip-lite";
-import { rpcCall } from "../rpc";
+import { rpcCall, isWarmingUp } from "../rpc";
 
 export const networkRouter = Router();
 
@@ -87,6 +87,9 @@ networkRouter.get("/", async (_req, res) => {
         blocksonly: false,
       });
     } catch (fallbackErr: unknown) {
+      if (isWarmingUp(fallbackErr)) {
+        return res.json({ syncing: true, tor_reachable: false, listen: true, network_active: false, onion_peers: 0, clearnet_peers: 0, p2p_peers: 0, i2p_peers: 0, total_peers: 0, blocksonly: false });
+      }
       console.error("[network] RPC error:", fallbackErr);
       res.status(502).json({ error: "Node unavailable" });
     }
@@ -126,6 +129,9 @@ networkRouter.get("/peers", async (_req, res) => {
     });
     res.json(simplified);
   } catch (err: unknown) {
+    if (isWarmingUp(err)) {
+      return res.json([]);
+    }
     console.error("[network] peers error:", err);
     res.status(502).json({ error: "Node unavailable" });
   }

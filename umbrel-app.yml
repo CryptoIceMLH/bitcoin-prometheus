@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: prometheus128.jpg
 category: bitcoin
-version: "0.2.3"
+version: "0.2.4"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -21,6 +21,9 @@ gallery:
   - 1.jpg
   - 2.jpg
 releaseNotes: >-
+  v0.2.4: Fix Electrs/Fulcrum P2P whitebind port (8335) so third-party apps connect correctly.
+  Fix node startup UX — shows syncing status instead of node unavailable during block verification.
+
   v0.2.3: Version bump. Rebuild and re-publish to validate full Umbrel update pipeline.
 
   v0.2.2: Fix JSON-RPC 1.1 compatibility. prometheusd now accepts JSON-RPC

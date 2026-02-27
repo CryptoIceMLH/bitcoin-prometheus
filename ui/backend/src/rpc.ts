@@ -52,3 +52,8 @@ export async function rpcCall(method: string, params: unknown[] = []): Promise<u
 
   return json.result;
 }
+
+export function isWarmingUp(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('"code":-28') || msg.includes('"code": -28');
+}

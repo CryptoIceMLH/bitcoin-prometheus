@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { rpcCall } from "../rpc";
+import { rpcCall, isWarmingUp } from "../rpc";
 
 export const mempoolRouter = Router();
 
@@ -22,6 +22,9 @@ mempoolRouter.get("/", async (_req, res) => {
         unbroadcastcount: info.unbroadcastcount,
       });
     } catch (fallbackErr: unknown) {
+      if (isWarmingUp(fallbackErr)) {
+        return res.json({ syncing: true, size: 0, bytes: 0, usage: 0, total_fee: 0, maxmempool: 0, mempoolminfee: 0, minrelaytxfee: 0, unbroadcastcount: 0 });
+      }
       console.error("[mempool] RPC error:", fallbackErr);
       res.status(502).json({ error: "Node unavailable" });
     }

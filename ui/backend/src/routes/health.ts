@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { rpcCall } from "../rpc";
+import { rpcCall, isWarmingUp } from "../rpc";
 import { parseConfFile } from "../lib/config";
 
 export const healthRouter = Router();
@@ -35,6 +35,9 @@ healthRouter.get("/", async (_req, res) => {
         pruning_enabled: pruning,
       });
     } catch (fallbackErr: unknown) {
+      if (isWarmingUp(fallbackErr)) {
+        return res.json({ syncing: true, uptime: 0, bytes_recv: 0, bytes_sent: 0, banned_peers: 0, dbcache_mb: 450, pruning_enabled: false });
+      }
       console.error("[health] RPC error:", fallbackErr);
       res.status(502).json({ error: "Node unavailable" });
     }

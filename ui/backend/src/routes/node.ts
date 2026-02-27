@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as fs from "fs";
 import * as path from "path";
-import { rpcCall } from "../rpc";
+import { rpcCall, isWarmingUp } from "../rpc";
 
 const DATA_DIR = process.env.DATA_DIR || "/data";
 const LOCATION_FILE = path.join(DATA_DIR, "node-location.json");
@@ -45,6 +45,9 @@ nodeRouter.get("/", async (_req, res) => {
         uptime: uptimeVal,
       });
     } catch (fallbackErr: unknown) {
+      if (isWarmingUp(fallbackErr)) {
+        return res.json({ syncing: true, version: "", chain: "main", blocks: 0, bestblockhash: "", difficulty: 0, verification_progress: 0, mempool_transactions: 0, mempool_bytes: 0, mempool_usage: 0, connections: 0, connections_in: 0, connections_out: 0, network_active: false, uptime: 0 });
+      }
       console.error("[node] RPC error:", fallbackErr);
       res.status(502).json({ error: "Node unavailable" });
     }

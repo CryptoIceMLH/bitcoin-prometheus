@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     environment:
       - RPC_PORT=8332
+      - P2P_PORT=8333
     ports:
       - "8333:8333"   # P2P
       - "8332:8332"   # RPC + Metrics (/metrics endpoint)

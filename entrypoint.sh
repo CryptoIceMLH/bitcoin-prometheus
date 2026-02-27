@@ -64,6 +64,14 @@ if [ -n "$TOR_PROXY" ]; then
   echo "proxy=${TOR_PROXY_ADDR}" >> "$CONF_FILE"
 fi
 
+# Tor hidden service (inbound only) — optional, if TOR_CONTROL is set
+sed -i '/^torcontrol=/d' "$CONF_FILE"
+sed -i '/^listenonion=/d' "$CONF_FILE"
+if [ -n "$TOR_CONTROL" ]; then
+  echo "torcontrol=${TOR_CONTROL}" >> "$CONF_FILE"
+  echo "listenonion=1" >> "$CONF_FILE"
+fi
+
 # ZMQ endpoints
 if [ -n "$ZMQ_RAWBLOCK_PORT" ]; then
   sed -i '/^zmqpubrawblock=/d' "$CONF_FILE"

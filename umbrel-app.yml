@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: prometheus128.jpg
 category: bitcoin
-version: "0.2.6"
+version: "0.2.7"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -21,6 +21,9 @@ gallery:
   - 1.jpg
   - 2.jpg
 releaseNotes: >-
+  v0.2.7: Fixed version bump process. Ensure CMakeLists.txt CLIENT_VERSION_BUILD updated on every release.
+  Node now correctly reports v0.2.7 in both binary and UI. All version strings synchronized.
+
   v0.2.6: Fix RPC server=1 always enforced on startup. Restoring blockchain data from backup
   was leaving RPC disabled in bitcoin.conf. Electrs can now authenticate properly.
 

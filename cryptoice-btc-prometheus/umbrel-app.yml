@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: https://raw.githubusercontent.com/CryptoIceMLH/bitcoin-prometheus/main/cryptoice-btc-prometheus/prometheus128.jpg
 category: bitcoin
-version: "0.2.7"
+version: "0.2.8"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -19,6 +19,11 @@ repo: https://github.com/CryptoIceMLH/bitcoin-prometheus
 support: https://github.com/CryptoIceMLH/bitcoin-prometheus/issues
 gallery: []
 releaseNotes: >-
+  v0.2.8: Fix JSON-RPC version validation (Electrs compatibility). Removed strict
+  JSON-RPC version checking that rejected non-standard versions. Now silently accepts
+  any jsonrpc value as V1_LEGACY, matching Bitcoin Knots behavior. Fixes "unexpected
+  structure" errors from Electrs and improves compatibility with wallet-aware clients.
+
   v0.2.7: Fixed version bump process. Ensure CMakeLists.txt CLIENT_VERSION_BUILD updated on every release.
   Node now correctly reports v0.2.7 in both binary and UI. All version strings synchronized.
 

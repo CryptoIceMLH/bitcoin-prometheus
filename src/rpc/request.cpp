@@ -222,9 +222,8 @@ void JSONRPCRequest::parse(const UniValue& valRequest)
             m_json_version = JSONRPCVersion::V1_LEGACY;
         } else if (jsonrpc_version.get_str() == "2.0") {
             m_json_version = JSONRPCVersion::V2;
-        } else {
-            throw JSONRPCError(RPC_INVALID_REQUEST, "JSON-RPC version not supported");
         }
+        // Silently accept any other version as V1_LEGACY (Knots-compatible behavior)
     }
 
     // Parse method

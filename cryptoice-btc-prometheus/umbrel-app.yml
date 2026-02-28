@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: https://raw.githubusercontent.com/CryptoIceMLH/bitcoin-prometheus/main/cryptoice-btc-prometheus/prometheus128.jpg
 category: bitcoin
-version: "0.3.0"
+version: "0.3.1"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -19,6 +19,11 @@ repo: https://github.com/CryptoIceMLH/bitcoin-prometheus
 support: https://github.com/CryptoIceMLH/bitcoin-prometheus/issues
 gallery: []
 releaseNotes: >-
+  v0.3.1: Enable txindex=1 to support Mempool and other blockchain explorers.
+  Mempool requires transaction indexing to fetch transactions by txid without a block hash.
+  txindex is now enforced on startup (same pattern as server=1) so existing deployments
+  get the fix on next restart without a full resync.
+
   v0.3.0: Fix Bitcoin protocol version reporting for Electrs compatibility.
   CMakeLists.txt now reports version 300000 (v30.0.0) to satisfy Electrs requirement
   of version ≥210000. This separates internal versioning (CMakeLists) from UI display

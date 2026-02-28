@@ -29,6 +29,10 @@ fi
 sed -i '/^server=/d' "$CONF_FILE"
 echo "server=1" >> "$CONF_FILE"
 
+# Always ensure txindex=1 is set (required for Mempool and block explorers)
+sed -i '/^txindex=/d' "$CONF_FILE"
+echo "txindex=1" >> "$CONF_FILE"
+
 # Remove any legacy rpcuser/rpcpassword so cookie auth activates when no RPC env vars set
 sed -i '/^rpcuser=/d' "$CONF_FILE"
 sed -i '/^rpcpassword=/d' "$CONF_FILE"

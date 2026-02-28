@@ -3,6 +3,7 @@
 **Dev server:** 192.168.1.114
 **User:** prometheus
 **SSH:** `ssh prometheus@192.168.1.114`
+**Repo path:** `/home/prometheus/BTC-Prometheus`
 
 ---
 
@@ -165,7 +166,7 @@ Blockchain data at `/home/prometheus/.bitcoin/` is never lost.
 
 When bumping version (e.g., v0.2.1 → v0.2.2):
 
-- [ ] `CMakeLists.txt` — `CLIENT_VERSION_BUILD`
+- [ ] **`CMakeLists.txt` — `CLIENT_VERSION_BUILD` (MUST be updated or binary shows wrong version!)** ⚠️ **CRITICAL**
 - [ ] `umbrel-app.yml` (root) — `version:` field + `releaseNotes:`
 - [ ] `cryptoice-btc-prometheus/umbrel-app.yml` — `version:` field + `releaseNotes:`
 - [ ] **`cryptoice-btc-prometheus/docker-compose.yml` — update ALL image tags** ⚠️ **CRITICAL**

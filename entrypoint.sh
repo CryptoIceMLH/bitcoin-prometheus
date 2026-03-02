@@ -55,11 +55,16 @@ if [ -n "$P2P_PORT" ]; then
   echo "port=${P2P_PORT}" >> "$CONF_FILE"
 fi
 
-# Whitelist local networks for trusted apps (Electrs, Fulcrum) without overriding P2P listener
-# Bitcoin Core standard: whitelist marks connections as trusted, NOT a listening address
-# Never use whitebind as it overrides the main P2P listener and breaks inbound peer connections
+# P2P bind — match official Bitcoin Core / Umbrel pattern:
+#   bind=0.0.0.0:8333      → public P2P listener (explicit, because whitebind suppresses the default)
+#   whitebind=0.0.0.0:8335 → trusted internal listener for dependent apps (Electrs, Mempool, Fulcrum)
+# Both lines are required: whitebind alone kills the public 8333 listener.
+sed -i '/^bind=/d' "$CONF_FILE"
+sed -i '/^whitebind=/d' "$CONF_FILE"
 sed -i '/^whitelist=/d' "$CONF_FILE"
-echo "whitelist=0.0.0.0/0" >> "$CONF_FILE"
+P2P="${P2P_PORT:-8333}"
+echo "bind=0.0.0.0:${P2P}" >> "$CONF_FILE"
+echo "whitebind=0.0.0.0:8335" >> "$CONF_FILE"
 
 # RPC binding — allow connections from Docker network
 sed -i '/^rpcallowip=/d' "$CONF_FILE"

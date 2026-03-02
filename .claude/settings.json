@@ -11,7 +11,9 @@
       "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 umbrel@192.168.1.213 \"ls /etc/sudoers.d/\")",
       "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 umbrel@192.168.1.213 \"cat /etc/sudoers.d/umbrel\")",
       "Bash(ssh -o ConnectTimeout=5 prometheus@192.168.1.114 \"cd /home/prometheus/BTC-Prometheus && docker compose down\")",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:insidebitcoincode.substack.com)"
     ]
   }
 }

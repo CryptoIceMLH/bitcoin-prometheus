@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: https://raw.githubusercontent.com/CryptoIceMLH/bitcoin-prometheus/main/cryptoice-btc-prometheus/prometheus128.jpg
 category: bitcoin
-version: "0.3.3"
+version: "0.3.4"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -19,10 +19,10 @@ repo: https://github.com/CryptoIceMLH/bitcoin-prometheus
 support: https://github.com/CryptoIceMLH/bitcoin-prometheus/issues
 gallery: []
 releaseNotes: >-
-  v0.3.3: Fix Electrs P2P connection by exposing port 8335 as secondary listener.
-  v0.3.2 removed whitebind but Umbrel's Electrs app still expects port 8335 for P2P.
-  Now expose 8335→8333 so Electrs connects without change. Maintains v0.3.2 fix
-  (whitelist-based trusted app handling) while restoring Electrs compatibility.
+  v0.3.4: Fix Electrs and all dependent apps by restoring whitebind on 8335.
+  v0.3.2-0.3.3 broke Electrs, Mempool, Fulcrum by removing whitebind. Now uses
+  official Bitcoin Core pattern: bind=0.0.0.0:8333 (public P2P) + whitebind=0.0.0.0:8335
+  (trusted internal apps). Both lines required—whitebind alone kills the default listener.
 
   v0.3.2: Fix P2P inbound peer connections. Removed whitebind which was overriding
   the main P2P listener (port 8333) and preventing inbound connections from external peers.

@@ -55,11 +55,11 @@ if [ -n "$P2P_PORT" ]; then
   echo "port=${P2P_PORT}" >> "$CONF_FILE"
 fi
 
-# Whitebind — for trusted local apps (Electrs, Fulcrum) — standard Bitcoin Core uses 8335
-if [ -n "$WHITEBIND_PORT" ]; then
-  sed -i '/^whitebind=/d' "$CONF_FILE"
-  echo "whitebind=0.0.0.0:${WHITEBIND_PORT}" >> "$CONF_FILE"
-fi
+# Whitelist local networks for trusted apps (Electrs, Fulcrum) without overriding P2P listener
+# Bitcoin Core standard: whitelist marks connections as trusted, NOT a listening address
+# Never use whitebind as it overrides the main P2P listener and breaks inbound peer connections
+sed -i '/^whitelist=/d' "$CONF_FILE"
+echo "whitelist=0.0.0.0/0" >> "$CONF_FILE"
 
 # RPC binding — allow connections from Docker network
 sed -i '/^rpcallowip=/d' "$CONF_FILE"

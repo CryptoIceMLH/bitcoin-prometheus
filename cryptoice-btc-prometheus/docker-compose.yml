@@ -5,13 +5,12 @@ services:
       APP_PORT: 80
 
   prometheus-node:
-    image: ghcr.io/cryptoicemlh/btc-prometheus-node:v0.3.1
+    image: ghcr.io/cryptoicemlh/btc-prometheus-node:v0.3.2
     restart: unless-stopped
     stop_grace_period: 15m30s
     ports:
       - "${APP_CRYPTOICE_BTC_PROMETHEUS_P2P_PORT}:${APP_CRYPTOICE_BTC_PROMETHEUS_P2P_PORT}"
       - "${APP_CRYPTOICE_BTC_PROMETHEUS_RPC_PORT}:${APP_CRYPTOICE_BTC_PROMETHEUS_RPC_PORT}"
-      - "${APP_BITCOIN_P2P_WHITEBIND_PORT}:${APP_BITCOIN_P2P_WHITEBIND_PORT}"
     volumes:
       - ${APP_DATA_DIR}/data/bitcoin:/home/bitcoin/.bitcoin
       - ${APP_DATA_DIR}/data/bitcoin:/data/.bitcoin:ro
@@ -20,7 +19,6 @@ services:
       RPC_PASS: "${APP_CRYPTOICE_BTC_PROMETHEUS_RPC_PASS}"
       RPC_PORT: "${APP_CRYPTOICE_BTC_PROMETHEUS_RPC_PORT}"
       P2P_PORT: "${APP_CRYPTOICE_BTC_PROMETHEUS_P2P_PORT}"
-      WHITEBIND_PORT: "${APP_BITCOIN_P2P_WHITEBIND_PORT}"
       ZMQ_RAWBLOCK_PORT: "${APP_CRYPTOICE_BTC_PROMETHEUS_ZMQ_RAWBLOCK_PORT}"
       ZMQ_RAWTX_PORT: "${APP_CRYPTOICE_BTC_PROMETHEUS_ZMQ_RAWTX_PORT}"
       ZMQ_HASHBLOCK_PORT: "${APP_CRYPTOICE_BTC_PROMETHEUS_ZMQ_HASHBLOCK_PORT}"
@@ -34,7 +32,7 @@ services:
       - -printtoconsole
 
   ui-backend:
-    image: ghcr.io/cryptoicemlh/btc-prometheus-api:v0.3.1
+    image: ghcr.io/cryptoicemlh/btc-prometheus-api:v0.3.2
     restart: unless-stopped
     environment:
       - RPC_HOST=$APP_CRYPTOICE_BTC_PROMETHEUS_NODE_IP
@@ -49,7 +47,7 @@ services:
       - prometheus-node
 
   ui-frontend:
-    image: ghcr.io/cryptoicemlh/btc-prometheus-ui:v0.3.1
+    image: ghcr.io/cryptoicemlh/btc-prometheus-ui:v0.3.2
     restart: unless-stopped
     depends_on:
       - ui-backend

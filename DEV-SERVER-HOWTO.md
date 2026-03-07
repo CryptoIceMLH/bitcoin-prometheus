@@ -1,8 +1,4 @@
-# Dev Server How-To
 
-**Dev server:** 192.168.1.114
-**User:** prometheus
-**SSH:** `ssh prometheus@192.168.1.114`
 **Repo path:** `/home/prometheus/BTC-Prometheus`
 
 ---

@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: prometheus128.jpg
 category: bitcoin
-version: "0.4.0"
+version: "0.4.1"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -21,6 +21,15 @@ gallery:
   - 1.jpg
   - 2.jpg
 releaseNotes: >-
+  v0.4.1: Fixes for v0.4.0. Saving in Sovereign Controls works again (was "Save failed: 400").
+  Settings that would stop the node from starting are now refused: I2P in Allowed Networks
+  (no I2P router is included) and a malformed SOCKS5 proxy. Turning pruning off now asks for
+  confirmation and re-downloads the blockchain once, instead of leaving the node unable to start.
+  The dashboard shows the real minimum fee rate and user agent. Nodes still carrying the wrong
+  defaults written by the v0.3.x settings page are reset to Bitcoin Core defaults.
+
+
+
   v0.4.0: Security updates, pruning fix, umbrelOS 2.0 support, working Tor and a fixed map.
 
 

@@ -51,6 +51,33 @@ fi
 sed -i '/^txindex=/d' "$CONF_FILE"
 echo "txindex=${TXINDEX}" >> "$CONF_FILE"
 
+# Pruned → unpruned needs one -reindex (full re-download) or Core refuses to start.
+# Sovereign Controls leaves this marker after the operator confirms; run it once.
+REINDEX_MARKER="${DATA_DIR}/.prometheus-reindex"
+if [ -f "$REINDEX_MARKER" ]; then
+  rm -f "$REINDEX_MARKER"
+  if [ -z "$PRUNE" ] || [ "$PRUNE" = "0" ]; then
+    echo "Pruning was turned off: starting once with -reindex (re-downloads the whole blockchain)"
+    set -- "$@" -reindex
+  fi
+fi
+
+# Networks we have no router for: onlynet=i2p (no -i2psam) stops Core from starting
+sed -i '/^onlynet=i2p$/d' "$CONF_FILE"
+sed -i '/^onlynet=cjdns$/d' "$CONF_FILE"
+
+# Undo the wrong defaults the v0.3.x UI wrote on every save (10x relay fee, 4 RPC threads...).
+# Only when all five still carry the old values, i.e. the operator never changed them.
+if grep -qx 'minrelaytxfee=0.00001' "$CONF_FILE" \
+  && grep -qx 'incrementalrelayfee=0.00001' "$CONF_FILE" \
+  && grep -qx 'blockmintxfee=0.00001' "$CONF_FILE" \
+  && grep -qx 'rpcthreads=4' "$CONF_FILE" \
+  && grep -qx 'blockmaxweight=3996000' "$CONF_FILE"; then
+  echo "Resetting fee rates, rpcthreads and blockmaxweight left by the v0.3.x UI to Bitcoin Core defaults"
+  sed -i -e '/^minrelaytxfee=/d' -e '/^incrementalrelayfee=/d' -e '/^blockmintxfee=/d' \
+    -e '/^rpcthreads=/d' -e '/^blockmaxweight=/d' "$CONF_FILE"
+fi
+
 # Remove any legacy rpcuser/rpcpassword so cookie auth activates when no RPC env vars set
 sed -i '/^rpcuser=/d' "$CONF_FILE"
 sed -i '/^rpcpassword=/d' "$CONF_FILE"

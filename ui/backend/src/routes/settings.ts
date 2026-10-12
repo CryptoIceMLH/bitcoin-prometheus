@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { rpcCall } from "../rpc";
 import * as fs from "fs";
+import * as path from "path";
 import { DEFAULTS, DATA_DIR, CONF_FILE, parseConfFile } from "../lib/config";
 
 
@@ -31,6 +32,15 @@ const UI_BLOCK_HEADER = "# --- Sovereign Controls (managed by the Prometheus UI)
 
 // Address format: IPv4, bracketed IPv6, .onion hostname, or DNS name — with port
 const ADDR_PATTERN = /^(?:(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|[\w.-]+\.onion|[\w.-]+):\d{1,5}$/;
+
+// SOCKS5 proxy: IPv4, bracketed IPv6 or hostname, with port (bitcoind won't start on anything else)
+const PROXY_PATTERN = /^(?:(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|[A-Za-z0-9][\w.-]*):\d{1,5}$/;
+
+// Networks Prometheus can actually reach. i2p/cjdns need a router we don't ship, and
+// onlynet=i2p without -i2psam stops bitcoind from starting.
+const ONLYNET_VALUES = new Set(["ipv4", "ipv6", "onion"]);
+
+const REINDEX_MARKER = path.join(DATA_DIR, ".prometheus-reindex");
 
 // Merge settings into the existing bitcoin.conf. Lines for UI-managed keys are replaced;
 // everything else (entrypoint-managed lines, operator's hand edits) is kept as-is.
@@ -105,7 +115,12 @@ settingsRouter.get("/", async (_req, res) => {
   let policy: Record<string, unknown> = {};
   let rpcAddnodes: string[] = [];
   try {
-    policy = (await rpcCall("getpolicy")) as Record<string, unknown>;
+    // Only keys the UI may save: getpolicy also reports read-only values (e.g. listen),
+    // and sending those back would make every save fail with "Invalid config keys"
+    const livePolicy = (await rpcCall("getpolicy")) as Record<string, unknown>;
+    policy = Object.fromEntries(
+      Object.entries(livePolicy).filter(([k]) => ALLOWED_CONF_KEYS.has(k))
+    );
 
     // Read addnode from RPC (runtime-added nodes not yet in config)
     try {
@@ -120,13 +135,18 @@ settingsRouter.get("/", async (_req, res) => {
   const confAddnodes = Array.isArray(confSettings.addnode) ? confSettings.addnode as string[] : [];
   const allAddnodes = [...new Set([...confAddnodes, ...rpcAddnodes])];
 
+  // Drop unsupported networks from an older config (entrypoint.sh strips them too)
+  if (Array.isArray(knownConf.onlynet)) {
+    knownConf.onlynet = (knownConf.onlynet as string[]).filter((n) => ONLYNET_VALUES.has(n));
+  }
+
   // Layer: defaults < config file < RPC policy (most authoritative)
   res.json({ ...DEFAULTS, ...knownConf, ...policy, addnode: allAddnodes });
 });
 
 // POST save settings
 settingsRouter.post("/", async (req, res) => {
-  const settings = req.body as Record<string, unknown>;
+  const { confirm_unprune: confirmUnprune, ...settings } = req.body as Record<string, unknown>;
 
   // Reject unknown config keys
   const invalidKeys = Object.keys(settings).filter(
@@ -137,14 +157,35 @@ settingsRouter.post("/", async (req, res) => {
     return;
   }
 
-  // Values Bitcoin Core refuses at startup
+  // Values Bitcoin Core refuses at startup — reject them here so a save can't stop the node
   const prune = Number(settings.prune ?? 0);
   if (prune !== 0 && prune !== 1 && prune < 550) {
     res.status(400).json({ error: "Prune target must be at least 550 MB" });
     return;
   }
+  const proxy = typeof settings.proxy === "string" ? settings.proxy.trim() : "";
+  if (proxy !== "" && !PROXY_PATTERN.test(proxy)) {
+    res.status(400).json({ error: `SOCKS5 proxy must be host:port (e.g. 127.0.0.1:9050), got "${proxy}"` });
+    return;
+  }
+  settings.proxy = proxy;
+  const onlynet = Array.isArray(settings.onlynet) ? settings.onlynet.map(String) : [];
+  const badNets = onlynet.filter((n) => !ONLYNET_VALUES.has(n));
+  if (badNets.length > 0) {
+    res.status(400).json({ error: `Unsupported network(s) for onlynet: ${badNets.join(", ")} (Prometheus has no I2P or CJDNS router)` });
+    return;
+  }
   // Pruning and txindex can't be combined; pruning wins (entrypoint.sh enforces the same)
   if (prune > 0) settings.txindex = false;
+
+  // Going from pruned back to unpruned needs a one-time -reindex (re-downloads the whole
+  // chain), otherwise Core refuses to start. Require explicit confirmation from the UI.
+  const savedPrune = Number(parseConfFile().prune ?? 0);
+  const unpruning = savedPrune > 0 && prune === 0;
+  if (unpruning && confirmUnprune !== true) {
+    res.status(400).json({ error: "Turning pruning off re-downloads the whole blockchain; confirmation required" });
+    return;
+  }
 
   const applied: string[] = [];
   const errors: string[] = [];
@@ -169,8 +210,9 @@ settingsRouter.post("/", async (req, res) => {
     }
   } catch { }
 
-  // Add new addnodes
+  // Add new addnodes (invalid ones are reported and kept out of bitcoin.conf)
   if (addnodes && addnodes.length > 0) {
+    settings.addnode = addnodes.filter((addr) => ADDR_PATTERN.test(addr));
     for (const addr of addnodes) {
       if (!ADDR_PATTERN.test(addr)) {
         errors.push(`Invalid address format: ${addr}`);
@@ -200,6 +242,11 @@ settingsRouter.post("/", async (req, res) => {
     fs.writeFileSync(CONF_FILE, mergeConfFile(existing, settings), "utf8");
     configWritten = true;
     applied.push("bitcoin.conf updated");
+    // entrypoint.sh starts the node once with -reindex when this marker exists
+    if (unpruning) {
+      fs.writeFileSync(REINDEX_MARKER, "requested by Sovereign Controls: prune turned off\n", "utf8");
+      applied.push("full re-download scheduled for next restart");
+    }
   } catch (err: unknown) {
     console.error("[settings] config write error:", err);
     errors.push("Config write failed");

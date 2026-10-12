@@ -158,14 +158,16 @@ export const api = {
   getPeers: () => fetchJSON<Peer[]>("/network/peers"),
   getHealth: () => fetchJSON<HealthInfo>("/health"),
   getSettings: () => fetchJSON<PolicySettings>("/settings"),
-  saveSettings: async (settings: PolicySettings): Promise<SaveResult> => {
+  // confirmUnprune: the operator agreed that turning pruning off re-downloads the whole chain
+  saveSettings: async (settings: PolicySettings, confirmUnprune = false): Promise<SaveResult> => {
     const res = await fetch(`${BASE}/settings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settings),
+      body: JSON.stringify(confirmUnprune ? { ...settings, confirm_unprune: true } : settings),
     });
     if (!res.ok) {
-      throw new Error(`Save failed: ${res.status}`);
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(body?.error ? `Save failed: ${body.error}` : `Save failed: ${res.status}`);
     }
     return res.json() as Promise<SaveResult>;
   },

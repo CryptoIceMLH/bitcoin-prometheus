@@ -247,7 +247,7 @@ const NETWORK_OPTIONS: Array<{ value: string; label: string; desc?: string }> = 
   { value: "ipv4", label: "IPv4", desc: "Standard internet" },
   { value: "ipv6", label: "IPv6", desc: "Next-gen internet" },
   { value: "onion", label: "Tor (.onion)", desc: "Anonymous overlay" },
-  { value: "i2p", label: "I2P", desc: "Invisible Internet" },
+  // No I2P: Prometheus ships no I2P router, and onlynet=i2p without one stops the node starting
 ];
 
 const DEBUG_OPTIONS: Array<{ value: string; label: string; desc?: string }> = [
@@ -309,10 +309,13 @@ export default function SovereignControls() {
   const [loaded, setLoaded] = useState(false);
   const [saved, setSaved] = useState(false);
   const [credentials, setCredentials] = useState<RpcCredentials | null>(null);
+  // Prune target as saved in bitcoin.conf, to detect pruned → unpruned (needs a full re-download)
+  const [savedPrune, setSavedPrune] = useState(0);
 
   useEffect(() => {
     api.getSettings().then((s) => {
       setSettings(s);
+      setSavedPrune(s.prune);
       setLoaded(true);
     }).catch(() => setLoaded(true));
     api.getCredentials().then(setCredentials).catch(() => {});
@@ -329,11 +332,17 @@ export default function SovereignControls() {
   const [restarting, setRestarting] = useState(false);
 
   const handleSave = async () => {
+    const unpruning = savedPrune > 0 && settings.prune === 0;
+    if (unpruning && !window.confirm(
+      "Turning pruning off means your node must download and verify the whole blockchain again " +
+      "(roughly 700 GB, can take days). This starts on the next node restart. Continue?"
+    )) return;
     setSaving(true);
     setSaveError(null);
     setSaveDetails([]);
     try {
-      const result = await api.saveSettings(settings);
+      const result = await api.saveSettings(settings, unpruning);
+      setSavedPrune(settings.prune);
       setSaved(true);
       setSaveDetails(result.applied);
       if (!result.ok) {
@@ -510,8 +519,8 @@ export default function SovereignControls() {
       {/* 6. Mining & Relay */}
       <Section title="Mining & Relay">
         <Slider label="Block Max Weight" value={settings.blockmaxweight} defaultValue={DEFAULTS.blockmaxweight}
-          min={4000} max={4000000} step={1000} unit="WU"
-          description="Maximum weight of blocks your node will create for mining. The consensus limit is 4,000,000 weight units. Lowering this creates smaller blocks."
+          min={8000} max={4000000} step={1000} unit="WU"
+          description="Maximum weight of blocks your node will create for mining. The consensus limit is 4,000,000 weight units. Lowering this creates smaller blocks (8,000 WU is reserved for the block header and coinbase, so at the minimum blocks are empty)."
           onChange={(v) => update("blockmaxweight", v)} />
         <FeeInput label="Block Min Transaction Fee" value={settings.blockmintxfee} defaultValue={DEFAULTS.blockmintxfee}
           description="Minimum fee rate for transactions to be included in blocks your node creates for mining. Transactions below this fee are not included in block templates."

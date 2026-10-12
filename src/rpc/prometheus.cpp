@@ -29,6 +29,8 @@
 
 #include <univalue.h>
 
+#include <algorithm>
+
 using node::NodeContext;
 
 static RPCHelpMan getprometheusinfo()
@@ -67,7 +69,7 @@ static RPCHelpMan getprometheusinfo()
     UniValue obj(UniValue::VOBJ);
 
     obj.pushKV("version", FormatFullVersion());
-    obj.pushKV("user_agent", strprintf("/Prometheus:%s/", FormatFullVersion()));
+    obj.pushKV("user_agent", strSubVersion); // what peers actually see
 
     {
         LOCK(cs_main);
@@ -137,8 +139,8 @@ static RPCHelpMan getmempoolstats()
                 {RPCResult::Type::NUM, "usage", "Memory usage in bytes"},
                 {RPCResult::Type::NUM, "total_fee", "Total fees in satoshis"},
                 {RPCResult::Type::NUM, "maxmempool", "Maximum mempool size in bytes"},
-                {RPCResult::Type::NUM, "mempoolminfee", "Minimum fee rate for mempool entry (sat/vB)"},
-                {RPCResult::Type::NUM, "minrelaytxfee", "Minimum relay fee rate (sat/vB)"},
+                {RPCResult::Type::STR_AMOUNT, "mempoolminfee", "Minimum fee rate in " + CURRENCY_UNIT + "/kvB for mempool entry (the higher of minrelaytxfee and the rolling mempool minimum)"},
+                {RPCResult::Type::STR_AMOUNT, "minrelaytxfee", "Minimum relay fee rate in " + CURRENCY_UNIT + "/kvB"},
                 {RPCResult::Type::NUM, "unbroadcastcount", "Number of unbroadcast transactions"},
             }},
         RPCExamples{
@@ -165,7 +167,8 @@ static RPCHelpMan getmempoolstats()
         obj.pushKV("total_fee", total_fee);
 
         obj.pushKV("maxmempool", (int64_t)mempool.m_opts.max_size_bytes);
-        obj.pushKV("mempoolminfee", ValueFromAmount(mempool.GetMinFee().GetFeePerK()));
+        // Same as getmempoolinfo: the effective entry fee is never below minrelaytxfee
+        obj.pushKV("mempoolminfee", ValueFromAmount(std::max(mempool.GetMinFee(), mempool.m_opts.min_relay_feerate).GetFeePerK()));
         obj.pushKV("minrelaytxfee", ValueFromAmount(mempool.m_opts.min_relay_feerate.GetFeePerK()));
         obj.pushKV("unbroadcastcount", (int64_t)mempool.GetUnbroadcastTxs().size());
     }

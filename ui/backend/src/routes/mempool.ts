@@ -15,7 +15,8 @@ mempoolRouter.get("/", async (_req, res) => {
         size: info.size,
         bytes: info.bytes,
         usage: info.usage,
-        total_fee: info.total_fee || 0,
+        // getmempoolinfo reports total_fee in BTC; getmempoolstats (and the UI) use satoshis
+        total_fee: Math.round(Number(info.total_fee || 0) * 1e8),
         maxmempool: info.maxmempool,
         mempoolminfee: info.mempoolminfee,
         minrelaytxfee: info.minrelaytxfee,

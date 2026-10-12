@@ -212,5 +212,6 @@ fi
 
 chown bitcoin:bitcoin "$CONF_FILE"
 
-# Drop to bitcoin user and start the node
-exec su -s /bin/sh bitcoin -c "exec prometheusd -conf=\"$CONF_FILE\" \"\$@\"" -- "$@"
+# Drop to bitcoin user and start the node. The word after -- becomes the inner shell's $0,
+# so "prometheusd" is a placeholder: without it the first real argument would be swallowed.
+exec su -s /bin/sh bitcoin -c "exec prometheusd -conf=\"$CONF_FILE\" \"\$@\"" -- prometheusd "$@"

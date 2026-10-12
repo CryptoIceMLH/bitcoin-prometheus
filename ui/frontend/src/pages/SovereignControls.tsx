@@ -6,15 +6,16 @@ import { api, PolicySettings, NetworkType, DebugCategory, RpcCredentials } from 
 // Reusable components
 // ---------------------------------------------------------------------------
 
-function Toggle({ label, description, checked, defaultValue, onChange }: {
-  label: string; description: string; checked: boolean; defaultValue: boolean; onChange: (v: boolean) => void;
+function Toggle({ label, description, checked, defaultValue, disabled = false, note, onChange }: {
+  label: string; description: string; checked: boolean; defaultValue: boolean; disabled?: boolean; note?: string; onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-start justify-between py-3">
+    <div className={`flex items-start justify-between py-3 ${disabled ? "opacity-50" : ""}`}>
       <div className="flex-1 mr-6">
         <p className="text-sm font-medium text-gray-200">{label}</p>
         <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{description}</p>
-        {checked !== defaultValue && (
+        {note && <p className="text-xs text-fire-amber mt-1 leading-relaxed">{note}</p>}
+        {!disabled && checked !== defaultValue && (
           <button onClick={() => onChange(defaultValue)} className="text-[10px] text-fire-amber hover:underline mt-1">
             Reset to default ({defaultValue ? "on" : "off"})
           </button>
@@ -22,7 +23,8 @@ function Toggle({ label, description, checked, defaultValue, onChange }: {
       </div>
       <button
         onClick={() => onChange(!checked)}
-        className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${checked ? "bg-fire-amber" : "bg-surface-light"}`}
+        disabled={disabled}
+        className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${checked ? "bg-fire-amber" : "bg-surface-light"} ${disabled ? "cursor-not-allowed" : ""}`}
       >
         <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm ${checked ? "translate-x-5" : "translate-x-0"}`} />
       </button>
@@ -77,6 +79,30 @@ function TextInput({ label, description, value, defaultValue, placeholder, unit,
         </button>
       )}
     </div>
+  );
+}
+
+// BTC amount as plain decimal text (never exponent notation like 1e-8, which bitcoind rejects)
+function formatBtc(n: number): string {
+  return n.toFixed(8).replace(/\.?0+$/, "");
+}
+
+// Fee rate field: keeps the typed text locally so partial input like "0.000" isn't reformatted mid-typing
+function FeeInput({ label, description, value, defaultValue, onChange }: {
+  label: string; description: string; value: number; defaultValue: number; onChange: (v: number) => void;
+}) {
+  const [text, setText] = useState(formatBtc(value));
+  useEffect(() => {
+    if (parseFloat(text) !== value) setText(formatBtc(value));
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <TextInput label={label} description={description} value={text} defaultValue={formatBtc(defaultValue)}
+      placeholder={formatBtc(defaultValue)} unit="BTC/kvB"
+      onChange={(v) => {
+        setText(v);
+        const n = parseFloat(v);
+        if (!isNaN(n) && n >= 0) onChange(n);
+      }} />
   );
 }
 
@@ -182,35 +208,35 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 // Defaults
 // ---------------------------------------------------------------------------
 
+// Must match the node's built-in defaults (Bitcoin Core v29.2+) and ui/backend/src/lib/config.ts
 const DEFAULTS: PolicySettings = {
   datacarrier: true,
   datacarriersize: 83,
   dbcache: 450,
   prune: 0,
-  txindex: false,
+  txindex: true,
   par: 0,
   maxmempool: 300,
   mempoolexpiry: 336,
-  minrelaytxfee: 0.00001,
-  incrementalrelayfee: 0.00001,
+  minrelaytxfee: 0.000001,
+  incrementalrelayfee: 0.000001,
   limitancestorcount: 25,
   limitdescendantcount: 25,
   permitbaremultisig: true,
   bytespersigop: 20,
   maxconnections: 125,
-  listen: true,
+  publicinbound: true,
   blocksonly: false,
   maxuploadtarget: 0,
   peerbloomfilters: false,
   proxy: "",
   onlynet: [],
-  upnp: false,
   natpmp: false,
   bantime: 86400,
   addnode: [],
-  blockmaxweight: 3996000,
-  blockmintxfee: 0.00001,
-  rpcthreads: 4,
+  blockmaxweight: 4000000,
+  blockmintxfee: 0.00000001,
+  rpcthreads: 16,
   rpcworkqueue: 64,
   debug: [],
   logips: false,
@@ -355,8 +381,8 @@ export default function SovereignControls() {
         <Section title="Credentials">
           <div className="py-2">
             <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-              RPC uses cookie authentication (standard practice). Cookie regenerates on every node restart.
-              Use these credentials to connect external wallets (Sparrow, Electrum) or apps to your node.
+              Use these credentials to connect external wallets (Sparrow, Electrum) or apps to your node's RPC.
+              On Umbrel they are fixed; on a standalone install they come from the auth cookie and change on every node restart.
             </p>
             <CredentialField label="RPC Username" value={credentials.rpcUser} />
             <CredentialField label="RPC Password" value={credentials.rpcPassword} masked />
@@ -370,12 +396,18 @@ export default function SovereignControls() {
           min={4} max={16384} step={50} unit="MB"
           description="RAM allocated for the UTXO database cache. Larger values dramatically speed up initial sync and block validation. Set this as high as your RAM allows."
           onChange={(v) => update("dbcache", v)} />
-        <Toggle label="Transaction Index (txindex)" checked={settings.txindex} defaultValue={DEFAULTS.txindex}
-          description="Maintain a full index of all transactions. Required if you want to look up any transaction by its txid (e.g. for block explorers). Uses extra disk space and slows initial sync. Incompatible with pruning."
+        <Toggle label="Transaction Index (txindex)" checked={settings.txindex && settings.prune === 0} defaultValue={DEFAULTS.txindex}
+          disabled={settings.prune > 0}
+          description="Maintain a full index of all transactions. Required by Mempool and block explorers to look up any transaction by its txid. Uses extra disk space (~60 GB). Incompatible with pruning."
+          note={settings.prune > 0 ? "Disabled while pruning is on." : undefined}
           onChange={(v) => update("txindex", v)} />
         <Toggle label="Enable Pruning" checked={settings.prune > 0} defaultValue={DEFAULTS.prune > 0}
-          description="Delete old block data to save disk space. Your node keeps only the most recent blocks. Cannot be combined with txindex. Minimum 550 MB."
-          onChange={(v) => update("prune", v ? 550 : 0)} />
+          description="Delete old block data to save disk space. Your node keeps only the most recent blocks. Turns off txindex. Minimum 550 MB."
+          note={settings.prune > 0 ? "Electrs, Fulcrum and Mempool need a full (unpruned) node and will stop working. Switching back to unpruned later requires downloading the whole blockchain again." : undefined}
+          onChange={(v) => {
+            setSettings((prev) => ({ ...prev, prune: v ? 550 : 0, txindex: v ? false : true }));
+            setSaved(false);
+          }} />
         {settings.prune > 0 && (
           <Slider label="Prune Target" value={settings.prune} defaultValue={550}
             min={550} max={10000} step={50} unit="MB"
@@ -394,14 +426,12 @@ export default function SovereignControls() {
           min={1} max={720} unit="hours"
           description="Hours before an unconfirmed transaction is removed from the mempool. Default is 14 days (336 hours)."
           onChange={(v) => update("mempoolexpiry", v)} />
-        <TextInput label="Min Relay Fee" value={String(settings.minrelaytxfee)} defaultValue={String(DEFAULTS.minrelaytxfee)}
-          placeholder="0.00001" unit="BTC/kvB"
-          description="Minimum fee rate to relay transactions. Transactions below this fee rate are dropped. Lowering this allows cheaper transactions but may increase spam."
-          onChange={(v) => update("minrelaytxfee", parseFloat(v) || 0)} />
-        <TextInput label="Incremental Relay Fee" value={String(settings.incrementalrelayfee)} defaultValue={String(DEFAULTS.incrementalrelayfee)}
-          placeholder="0.00001" unit="BTC/kvB"
+        <FeeInput label="Min Relay Fee" value={settings.minrelaytxfee} defaultValue={DEFAULTS.minrelaytxfee}
+          description="Minimum fee rate to relay transactions (default 0.000001 BTC/kvB = 0.1 sat/vB). Transactions below this fee rate are dropped. Raising it filters cheap transactions; lowering it relays more."
+          onChange={(v) => update("minrelaytxfee", v)} />
+        <FeeInput label="Incremental Relay Fee" value={settings.incrementalrelayfee} defaultValue={DEFAULTS.incrementalrelayfee}
           description="Minimum fee rate increase required for Replace-By-Fee (RBF) replacements. Also used as the fee rate step for mempool eviction."
-          onChange={(v) => update("incrementalrelayfee", parseFloat(v) || 0)} />
+          onChange={(v) => update("incrementalrelayfee", v)} />
         <Slider label="Max Ancestor Count" value={settings.limitancestorcount} defaultValue={DEFAULTS.limitancestorcount}
           min={1} max={100}
           description="Maximum number of unconfirmed parent transactions allowed for a mempool entry. Limits long chains of unconfirmed transactions."
@@ -436,9 +466,9 @@ export default function SovereignControls() {
           min={8} max={500}
           description="Maximum number of peer connections (inbound + outbound). More connections help the network but use more bandwidth and memory."
           onChange={(v) => update("maxconnections", v)} />
-        <Toggle label="Accept Incoming Connections (listen)" checked={settings.listen} defaultValue={DEFAULTS.listen}
-          description="Allow other nodes to connect to you. Helps the Bitcoin network stay healthy and decentralized, but makes your node's IP address visible to peers."
-          onChange={(v) => update("listen", v)} />
+        <Toggle label="Accept Incoming Connections" checked={settings.publicinbound} defaultValue={DEFAULTS.publicinbound}
+          description="Allow other nodes to connect to you over clearnet and Tor. Helps the Bitcoin network stay healthy and decentralized, but makes your node reachable by peers. Apps on this device (Electrs, Mempool, Fulcrum) can always connect."
+          onChange={(v) => update("publicinbound", v)} />
         <Toggle label="Blocks-Only Mode" checked={settings.blocksonly} defaultValue={DEFAULTS.blocksonly}
           description="Only download blocks, don't relay or accept unconfirmed transactions. Saves significant bandwidth (~88% reduction) but your mempool will be empty."
           onChange={(v) => update("blocksonly", v)} />
@@ -450,17 +480,14 @@ export default function SovereignControls() {
           description="Support BIP37 bloom filter requests from lightweight (SPV) wallets. This is a privacy concern as bloom filters leak wallet addresses. Disabled by default on mainnet."
           onChange={(v) => update("peerbloomfilters", v)} />
         <TextInput label="SOCKS5 Proxy" value={settings.proxy} defaultValue={DEFAULTS.proxy}
-          placeholder="tor-proxy:9050"
-          description="Route all outgoing connections through a SOCKS5 proxy. A Tor proxy is bundled — enter tor-proxy:9050 to enable anonymous connections. Leave empty to connect directly."
+          placeholder="127.0.0.1:9050"
+          description="Route all outgoing connections through a SOCKS5 proxy. Tor is built in — enter 127.0.0.1:9050 to send all traffic over Tor. Leave empty to connect to clearnet peers directly (.onion peers always go through Tor)."
           onChange={(v) => update("proxy", v)} />
         <MultiCheckbox label="Allowed Networks (onlynet)" description="Restrict connections to only these network types. Leave all unchecked to allow all networks. Selecting only 'Tor' gives maximum privacy."
           options={NETWORK_OPTIONS} selected={settings.onlynet}
           onChange={(v) => update("onlynet", v as NetworkType[])} />
-        <Toggle label="Enable UPnP" checked={settings.upnp} defaultValue={DEFAULTS.upnp}
-          description="Automatically configure your router to forward the Bitcoin port using UPnP. Convenient but some consider UPnP a security risk."
-          onChange={(v) => update("upnp", v)} />
-        <Toggle label="Enable NAT-PMP" checked={settings.natpmp} defaultValue={DEFAULTS.natpmp}
-          description="Automatically configure port forwarding using NAT-PMP (used by Apple routers). Similar to UPnP but simpler protocol."
+        <Toggle label="Automatic Port Forwarding (PCP / NAT-PMP)" checked={settings.natpmp} defaultValue={DEFAULTS.natpmp}
+          description="Ask your router to forward the Bitcoin port using PCP or NAT-PMP so peers can reach you. Only works if your router supports it (UPnP was removed in Bitcoin Core v29)."
           onChange={(v) => update("natpmp", v)} />
         <Slider label="Ban Duration" value={settings.bantime} defaultValue={DEFAULTS.bantime}
           min={60} max={604800} step={3600} unit="seconds"
@@ -475,8 +502,8 @@ export default function SovereignControls() {
           description="Manually add peer addresses to connect to. Your node will try to maintain a connection to these peers in addition to automatically discovered ones."
           onChange={(v) => update("addnode", v)} />
         <InfoDisplay label="Outbound Connection Slots"
-          value={`${Math.min(settings.maxconnections, 10)} automatic + ${Math.max(0, Math.min(settings.maxconnections - 10, 2))} block-relay-only`}
-          description="Your node automatically fills outbound slots. 8 full-relay connections + 2 block-relay-only connections by default."
+          value="8 full-relay + 2 block-relay-only"
+          description="Your node automatically fills its outbound slots. Manually added nodes connect on top of these."
           badge="Auto-managed" badgeColor="gray" />
       </Section>
 
@@ -486,10 +513,9 @@ export default function SovereignControls() {
           min={4000} max={4000000} step={1000} unit="WU"
           description="Maximum weight of blocks your node will create for mining. The consensus limit is 4,000,000 weight units. Lowering this creates smaller blocks."
           onChange={(v) => update("blockmaxweight", v)} />
-        <TextInput label="Block Min Transaction Fee" value={String(settings.blockmintxfee)} defaultValue={String(DEFAULTS.blockmintxfee)}
-          placeholder="0.00001" unit="BTC/kvB"
+        <FeeInput label="Block Min Transaction Fee" value={settings.blockmintxfee} defaultValue={DEFAULTS.blockmintxfee}
           description="Minimum fee rate for transactions to be included in blocks your node creates for mining. Transactions below this fee are not included in block templates."
-          onChange={(v) => update("blockmintxfee", parseFloat(v) || 0)} />
+          onChange={(v) => update("blockmintxfee", v)} />
         <InfoDisplay label="Non-Standard Transactions" value="Disabled"
           description="Your node will not accept or relay non-standard transactions. This is the safe default for mainnet and protects against potential exploits."
           badge="Read-Only" badgeColor="gray" />

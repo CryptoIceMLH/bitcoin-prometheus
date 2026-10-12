@@ -89,7 +89,7 @@ export function createFireMap(container: HTMLElement): FireMapRenderer {
     minZoom: 3,
     maxZoom: 6,
     zoomControl: false,
-    attributionControl: false,
+    attributionControl: true,
     dragging: true,
     scrollWheelZoom: true,
     doubleClickZoom: true,
@@ -100,10 +100,13 @@ export function createFireMap(container: HTMLElement): FireMapRenderer {
     maxBoundsViscosity: 0.8,
   });
 
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
-    subdomains: "abcd",
-    maxZoom: 20,
+  // Esri dark gray canvas — free, no API key (CARTO raster tiles need a key since Sep 2026).
+  // Esri's terms require the attribution below to stay visible.
+  map.attributionControl.setPrefix(false);
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 16,
     noWrap: true,
+    attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors",
   }).addTo(map);
 
   L.control.zoom({ position: "bottomright" }).addTo(map);

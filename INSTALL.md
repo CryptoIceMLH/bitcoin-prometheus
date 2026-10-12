@@ -159,34 +159,41 @@ Tips for faster sync:
 
 ## Pruning (Save Disk Space)
 
-If you don't have 700 GB free, enable pruning. Add to the node command in `docker-compose.yml`:
+If you don't have 700 GB free, enable pruning in the web dashboard:
 
-```yaml
-      - -prune=550    # Keep only 550 MB of block data (minimum)
-```
+1. Go to **Sovereign Controls** → **Storage & Performance**
+2. Turn on **Enable Pruning** and pick a target (minimum 550 MB)
+3. Click **Apply Changes**, then **Restart Node**
 
 This reduces disk usage to ~10 GB but you won't be able to serve historical blocks to other nodes.
+Pruning turns off the transaction index (`txindex`), so Electrs, Fulcrum and Mempool won't work
+with a pruned node. Don't add `-prune` to the `command:` in `docker-compose.yml`: the startup
+script can't see it there and the node will refuse to start because txindex is still on.
 
 ## Tor Support
 
-A Tor SOCKS5 proxy is bundled in the Docker stack (`tor-proxy` service). To enable Tor:
+Tor runs inside the node container (`TOR_ENABLED=1` in `docker-compose.yml`). With it on:
+
+- `.onion` peers are reached over Tor; clearnet peers still connect directly
+- your node publishes its own onion address so Tor peers can connect in
+  (unless **Accept Incoming Connections** is off)
+
+To send *all* traffic over Tor:
 
 1. Open the web dashboard at `http://<your-server-ip>:3000`
 2. Go to **Sovereign Controls** (Settings page)
-3. In **Network & Privacy**, set **SOCKS5 Proxy** to `tor-proxy:9050`
-4. Optionally check **Tor (.onion)** under **Allowed Networks** to connect only via Tor
+3. In **Network & Privacy**, set **SOCKS5 Proxy** to `127.0.0.1:9050`
+4. Optionally check only **Tor (.onion)** under **Allowed Networks** to connect only via Tor
 5. Click **Apply Changes**, then **Restart Node**
-
-After restart, your node will route connections through Tor. Onion peers will start appearing in the dashboard within a few minutes.
 
 To verify Tor is working:
 
 ```bash
-# Check if Tor proxy container is running
-docker compose ps tor-proxy
+# Tor's own log
+docker exec btc-prometheus tail -n 20 /home/bitcoin/.bitcoin/tor/notices.log
 
-# Check node sees Tor as reachable
-docker exec btc-prometheus bitcoin-cli -rpcuser=prometheus -rpcpassword=changeme getnetworkinfo | grep -A3 onion
+# Node sees onion as reachable and lists its onion address under localaddresses
+docker exec -u bitcoin btc-prometheus bitcoin-cli getnetworkinfo
 ```
 
 ## Troubleshooting

@@ -5,6 +5,38 @@ import { rpcCall, isWarmingUp } from "../rpc";
 
 const DATA_DIR = process.env.DATA_DIR || "/data";
 const LOCATION_FILE = path.join(DATA_DIR, "node-location.json");
+const DEBUG_LOG = path.join(DATA_DIR, "debug.log");
+const LOG_TAIL_BYTES = 256 * 1024;
+
+// Last error the node logged since its most recent startup (e.g. an invalid setting that
+// stops it from starting), so the UI can say why the node is down instead of guessing.
+function readLastStartupError(): string | null {
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(DEBUG_LOG, "r");
+    const size = fs.fstatSync(fd).size;
+    const len = Math.min(size, LOG_TAIL_BYTES);
+    const buf = Buffer.alloc(len);
+    fs.readSync(fd, buf, 0, len, size - len);
+    const lines = buf.toString("utf8").split("\n");
+
+    // Only look at the current run: everything after the last startup banner
+    let start = 0;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].includes("Default data directory")) { start = i; break; }
+    }
+    let lastError: string | null = null;
+    for (const line of lines.slice(start)) {
+      const m = line.match(/\[(?:[\w-]+:)?error\] (.*)$/);
+      if (m) lastError = m[1].trim();
+    }
+    return lastError;
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
 
 export const nodeRouter = Router();
 
@@ -52,6 +84,10 @@ nodeRouter.get("/", async (_req, res) => {
       res.status(502).json({ error: "Node unavailable" });
     }
   }
+});
+
+nodeRouter.get("/lasterror", (_req, res) => {
+  res.json({ error: readLastStartupError() });
 });
 
 // ---------------------------------------------------------------------------

@@ -125,6 +125,7 @@ function EternalFlame({
   const p2pCount = network?.p2p_peers ?? 0;
   const onionCount = network?.onion_peers ?? 0;
   const i2pCount = network?.i2p_peers ?? 0;
+  const localCount = network?.local_peers ?? 0;
   const donutR = 52;
   const donutStroke = 12;
   const donutC = 2 * Math.PI * donutR;
@@ -304,6 +305,12 @@ function EternalFlame({
               </span>
               <span className="text-xs font-semibold text-gray-600 tabular-nums">{i2pCount}</span>
             </div>
+            <div className="flex items-center justify-between gap-6">
+              <span className="flex items-center gap-2 text-xs text-gray-500">
+                <span className="w-2 h-2 rounded-full bg-green-500" /> Local apps
+              </span>
+              <span className="text-xs font-semibold text-gray-400 tabular-nums">{localCount}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -477,7 +484,8 @@ function MempoolCard({
     },
     {
       label: "Min Fee Rate",
-      value: mempool.mempoolminfee > 0 ? `${(mempool.mempoolminfee * 1e5).toFixed(0)} sat/vB` : "---",
+      // BTC/kvB → sat/vB; the default floor is 0.1 sat/vB, so keep up to 2 decimals
+      value: mempool.mempoolminfee > 0 ? `${parseFloat((mempool.mempoolminfee * 1e5).toFixed(2))} sat/vB` : "---",
       color: "text-green-400",
     },
     {
@@ -807,7 +815,13 @@ export default function Dashboard() {
       }
       prevMempoolSize.current = n.mempool_transactions;
     } catch {
-      setError("Unable to connect to node. Is prometheusd running?");
+      // Show the node's own startup error if it logged one (e.g. an invalid setting)
+      const last = await api.getLastError().catch(() => ({ error: null }));
+      setError(
+        last.error
+          ? `The node stopped with an error: ${last.error}`
+          : "Unable to connect to the node. It may still be starting up."
+      );
     }
   };
 
@@ -827,6 +841,9 @@ export default function Dashboard() {
             Node Unavailable
           </h2>
           <p className="text-gray-400 text-sm">{error}</p>
+          <p className="text-gray-500 text-xs mt-2">
+            You can still change settings in Sovereign Controls and restart the node.
+          </p>
           <button
             onClick={fetchAll}
             className="mt-4 px-4 py-2 bg-fire-orange/20 text-fire-amber rounded-lg hover:bg-fire-orange/30 transition-colors text-sm"

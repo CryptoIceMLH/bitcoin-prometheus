@@ -5,13 +5,14 @@ services:
       APP_PORT: 80
 
   prometheus-node:
-    image: ghcr.io/cryptoicemlh/btc-prometheus-node:v0.3.4
+    image: ghcr.io/cryptoicemlh/btc-prometheus-node:v0.4.0
     restart: unless-stopped
     stop_grace_period: 15m30s
     ports:
       - "${APP_CRYPTOICE_BTC_PROMETHEUS_P2P_PORT}:${APP_CRYPTOICE_BTC_PROMETHEUS_P2P_PORT}"
       - "${APP_CRYPTOICE_BTC_PROMETHEUS_RPC_PORT}:${APP_CRYPTOICE_BTC_PROMETHEUS_RPC_PORT}"
-      - "8335:8335"
+      # 8335 (whitebind) is deliberately NOT published: dependent apps reach it on the
+      # Umbrel Docker network at ${APP_CRYPTOICE_BTC_PROMETHEUS_NODE_IP}:8335
     volumes:
       - ${APP_DATA_DIR}/data/bitcoin:/home/bitcoin/.bitcoin
       - ${APP_DATA_DIR}/data/bitcoin:/data/.bitcoin:ro
@@ -25,7 +26,7 @@ services:
       ZMQ_HASHBLOCK_PORT: "${APP_CRYPTOICE_BTC_PROMETHEUS_ZMQ_HASHBLOCK_PORT}"
       ZMQ_HASHTX_PORT: "${APP_CRYPTOICE_BTC_PROMETHEUS_ZMQ_HASHTX_PORT}"
       ZMQ_SEQUENCE_PORT: "${APP_CRYPTOICE_BTC_PROMETHEUS_ZMQ_SEQUENCE_PORT}"
-      TOR_CONTROL: "tor-proxy:9051"
+      TOR_ENABLED: "1"
     networks:
       default:
         ipv4_address: $APP_CRYPTOICE_BTC_PROMETHEUS_NODE_IP
@@ -33,7 +34,7 @@ services:
       - -printtoconsole
 
   ui-backend:
-    image: ghcr.io/cryptoicemlh/btc-prometheus-api:v0.3.4
+    image: ghcr.io/cryptoicemlh/btc-prometheus-api:v0.4.0
     restart: unless-stopped
     environment:
       - RPC_HOST=$APP_CRYPTOICE_BTC_PROMETHEUS_NODE_IP
@@ -48,12 +49,7 @@ services:
       - prometheus-node
 
   ui-frontend:
-    image: ghcr.io/cryptoicemlh/btc-prometheus-ui:v0.3.4
+    image: ghcr.io/cryptoicemlh/btc-prometheus-ui:v0.4.0
     restart: unless-stopped
     depends_on:
       - ui-backend
-
-  tor-proxy:
-    image: peterdavehello/tor-socks-proxy:latest@sha256:1a21ef796e1c8929d3fac4f06dabb1c4e0734fd0b733a54d5d7ef767bd0eaa85
-    restart: unless-stopped
-

@@ -4,42 +4,43 @@ import * as path from "path";
 export const DATA_DIR = process.env.DATA_DIR || "/data";
 export const CONF_FILE = path.join(DATA_DIR, "bitcoin.conf");
 
+// Must match the node's built-in defaults (Bitcoin Core v29.2+), otherwise saving
+// Sovereign Controls silently changes node policy. Fee rates are in BTC/kvB.
 export const DEFAULTS: Record<string, unknown> = {
   datacarrier: true,
   datacarriersize: 83,
   dbcache: 450,
   prune: 0,
-  txindex: false,
+  txindex: true,
   par: 0,
   maxmempool: 300,
   mempoolexpiry: 336,
-  minrelaytxfee: 0.00001,
-  incrementalrelayfee: 0.00001,
+  minrelaytxfee: 0.000001,
+  incrementalrelayfee: 0.000001,
   limitancestorcount: 25,
   limitdescendantcount: 25,
   permitbaremultisig: true,
   bytespersigop: 20,
   maxconnections: 125,
-  listen: true,
+  publicinbound: true,
   blocksonly: false,
   maxuploadtarget: 0,
   peerbloomfilters: false,
   proxy: "",
   onlynet: [],
-  upnp: false,
   natpmp: false,
   bantime: 86400,
   addnode: [],
-  blockmaxweight: 3996000,
-  blockmintxfee: 0.00001,
-  rpcthreads: 4,
+  blockmaxweight: 4000000,
+  blockmintxfee: 0.00000001,
+  rpcthreads: 16,
   rpcworkqueue: 64,
   debug: [],
   logips: false,
   logtimestamps: true,
 };
 
-// Parse prometheus.conf into a settings object
+// Parse bitcoin.conf into a settings object
 export function parseConfFile(): Record<string, unknown> {
   try {
     const content = fs.readFileSync(CONF_FILE, "utf8");

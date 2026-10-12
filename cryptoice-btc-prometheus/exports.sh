@@ -14,8 +14,11 @@ export APP_CRYPTOICE_BTC_PROMETHEUS_ZMQ_HASHTX_PORT="28336"
 
 export APP_CRYPTOICE_BTC_PROMETHEUS_NETWORK="mainnet"
 
-# Data directory — for dependent apps to locate blockchain data and .cookie
-export APP_CRYPTOICE_BTC_PROMETHEUS_DATA_DIR="${EXPORTS_APP_DIR}/data/bitcoin"
+# Data directory — for dependent apps to locate blockchain data and .cookie.
+# umbrelOS 2.0 can move app data (storage.dataRoot) to another drive and then sets
+# EXPORTS_APP_DATA_DIR; fall back to the classic location on older umbrelOS.
+APP_DATA_ROOT="${EXPORTS_APP_DATA_DIR:-${EXPORTS_APP_DIR}/data}"
+export APP_CRYPTOICE_BTC_PROMETHEUS_DATA_DIR="${APP_DATA_ROOT}/bitcoin"
 
 # RPC credentials — generate once, persist in .env
 BITCOIN_ENV_FILE="${EXPORTS_APP_DIR}/.env"

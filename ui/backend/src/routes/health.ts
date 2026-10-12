@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { rpcCall, isWarmingUp } from "../rpc";
-import { parseConfFile } from "../lib/config";
+import { DEFAULTS, parseConfFile } from "../lib/config";
 
 export const healthRouter = Router();
 
@@ -16,7 +16,7 @@ healthRouter.get("/", async (_req, res) => {
 
       // Read real values from prometheus.conf
       const conf = parseConfFile();
-      const dbcache = typeof conf.dbcache === "number" ? conf.dbcache : 450;
+      const dbcache = typeof conf.dbcache === "number" ? conf.dbcache : DEFAULTS.dbcache;
       const pruning = typeof conf.prune === "number" && conf.prune > 0;
 
       // Get banned peers count from RPC

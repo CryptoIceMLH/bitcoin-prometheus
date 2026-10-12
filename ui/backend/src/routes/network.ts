@@ -41,16 +41,14 @@ function isPrivateIP(ip: string): boolean {
 networkRouter.get("/", async (_req, res) => {
   try {
     const privacy = (await rpcCall("getprivacystatus")) as Record<string, unknown>;
-    // Also count p2p (manual) peers and i2p peers
+    // Also count p2p (manual) peers
     try {
       const peerInfo = (await rpcCall("getpeerinfo")) as Array<Record<string, unknown>>;
       let p2pPeers = 0;
-      let i2pPeers = 0;
       for (const peer of peerInfo) {
         if (peer.connection_type === "manual") p2pPeers++;
-        if (peer.network === "i2p") i2pPeers++;
       }
-      res.json({ ...privacy, p2p_peers: p2pPeers, i2p_peers: i2pPeers });
+      res.json({ ...privacy, p2p_peers: p2pPeers });
     } catch {
       res.json(privacy);
     }
@@ -62,6 +60,7 @@ networkRouter.get("/", async (_req, res) => {
 
       let onionPeers = 0;
       let clearnetPeers = 0;
+      let localPeers = 0;
       let p2pPeers = 0;
       let i2pPeers = 0;
       for (const peer of peerInfo) {
@@ -69,6 +68,8 @@ networkRouter.get("/", async (_req, res) => {
           onionPeers++;
         } else if (peer.network === "i2p") {
           i2pPeers++;
+        } else if (peer.network === "not_publicly_routable") {
+          localPeers++;
         } else {
           clearnetPeers++;
         }
@@ -81,6 +82,7 @@ networkRouter.get("/", async (_req, res) => {
         network_active: networkInfo.networkactive,
         onion_peers: onionPeers,
         clearnet_peers: clearnetPeers,
+        local_peers: localPeers,
         p2p_peers: p2pPeers,
         i2p_peers: i2pPeers,
         total_peers: peerInfo.length,
@@ -88,7 +90,7 @@ networkRouter.get("/", async (_req, res) => {
       });
     } catch (fallbackErr: unknown) {
       if (isWarmingUp(fallbackErr)) {
-        return res.json({ syncing: true, tor_reachable: false, listen: true, network_active: false, onion_peers: 0, clearnet_peers: 0, p2p_peers: 0, i2p_peers: 0, total_peers: 0, blocksonly: false });
+        return res.json({ syncing: true, tor_reachable: false, listen: true, network_active: false, onion_peers: 0, clearnet_peers: 0, local_peers: 0, p2p_peers: 0, i2p_peers: 0, total_peers: 0, blocksonly: false });
       }
       console.error("[network] RPC error:", fallbackErr);
       res.status(502).json({ error: "Node unavailable" });

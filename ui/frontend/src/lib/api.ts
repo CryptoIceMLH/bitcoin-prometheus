@@ -42,6 +42,7 @@ export interface NetworkStatus {
   listen: boolean;
   network_active: boolean;
   clearnet_peers: number;
+  local_peers?: number;
   p2p_peers: number;
   onion_peers: number;
   i2p_peers: number;
@@ -101,13 +102,12 @@ export interface PolicySettings {
 
   // Network & Privacy
   maxconnections: number;
-  listen: boolean;
+  publicinbound: boolean;
   blocksonly: boolean;
   maxuploadtarget: number;
   peerbloomfilters: boolean;
   proxy: string;
   onlynet: NetworkType[];
-  upnp: boolean;
   natpmp: boolean;
   bantime: number;
 
@@ -151,6 +151,7 @@ export const api = {
 
   // Node
   getNode: () => fetchJSON<NodeInfo>("/node"),
+  getLastError: () => fetchJSON<{ error: string | null }>("/node/lasterror"),
   getNodeLocation: () => fetchJSON<NodeLocation>("/node/location"),
   getMempool: () => fetchJSON<MempoolStats>("/mempool"),
   getNetwork: () => fetchJSON<NetworkStatus>("/network"),

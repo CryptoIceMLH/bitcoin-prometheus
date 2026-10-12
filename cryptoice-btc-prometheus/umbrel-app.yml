@@ -6,7 +6,7 @@ name: BTC-Prometheus
 tagline: Sovereign Bitcoin full node with built-in monitoring
 icon: https://raw.githubusercontent.com/CryptoIceMLH/bitcoin-prometheus/main/cryptoice-btc-prometheus/prometheus128.jpg
 category: bitcoin
-version: "0.3.4"
+version: "0.4.0"
 port: 3000
 description: >-
   BTC-Prometheus is a Bitcoin full node client that puts every policy decision
@@ -19,6 +19,37 @@ repo: https://github.com/CryptoIceMLH/bitcoin-prometheus
 support: https://github.com/CryptoIceMLH/bitcoin-prometheus/issues
 gallery: []
 releaseNotes: >-
+  v0.4.0: Security updates, pruning fix, umbrelOS 2.0 support, working Tor and a fixed map.
+
+
+  Node: brings in all Bitcoin Core 29.3 and 29.4 fixes (except wallet), including the
+  CVE-2024-52911 hardening, the CVE-2025-46598 CPU denial-of-service fix, a mining
+  template fix and a fix for excessive chainstate disk writes. Still based on the
+  29.x line, without the v30 OP_RETURN policy change.
+
+
+  Pruning: a pruned node no longer crash-loops. Turning pruning on now switches
+  txindex off automatically (Electrs, Mempool and Fulcrum need an unpruned node).
+
+
+  Tor: Tor now runs inside the node with a current version. .onion peers are reached
+  over Tor and your node publishes its own onion address for inbound Tor peers.
+
+
+  Sovereign Controls: defaults now match the node, so saving no longer silently
+  raises your relay fee or lowers RPC threads. Settings are merged into bitcoin.conf
+  instead of overwriting it, and stay editable while the node is down. Turning off
+  incoming connections no longer stops the node from starting.
+
+
+  Dashboard: the peer map works again (CARTO now requires an API key, so it uses
+  Esri tiles). If the node fails to start, the dashboard shows the reason. Local
+  apps (Electrs, Mempool) are counted separately from clearnet peers.
+
+
+  umbrelOS 2.0: supports the new storage options, and blockchain data is excluded
+  from backups. Port 8335 is no longer exposed outside the Umbrel network.
+
   v0.3.4: Fix Electrs and all dependent apps by restoring whitebind on 8335.
   v0.3.2-0.3.3 broke Electrs, Mempool, Fulcrum by removing whitebind. Now uses
   official Bitcoin Core pattern: bind=0.0.0.0:8333 (public P2P) + whitebind=0.0.0.0:8335
@@ -76,6 +107,13 @@ releaseNotes: >-
   fixed cookie permissions, Python 3.12 compatibility. Added Mempool card to
   Dashboard. Metrics endpoint now reports accurate blockchain disk size.
 dependencies: []
+storage:
+  dataRoot: data
+backupIgnore:
+  - data/bitcoin/blocks
+  - data/bitcoin/chainstate
+  - data/bitcoin/indexes
+  - data/bitcoin/tor
 path: ""
 defaultUsername: ""
 defaultPassword: ""

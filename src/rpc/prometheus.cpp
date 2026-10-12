@@ -9,7 +9,10 @@
 #include <clientversion.h>
 #include <common/args.h>
 #include <common/system.h>
+#include <core_io.h>
+#include <httpserver.h>
 #include <kernel/cs_main.h>
+#include <kernel/mempool_options.h>
 #include <net.h>
 #include <net_processing.h>
 #include <netbase.h>
@@ -20,6 +23,7 @@
 #include <rpc/server_util.h>
 #include <rpc/util.h>
 #include <txmempool.h>
+#include <util/moneystr.h>
 #include <util/time.h>
 #include <validation.h>
 
@@ -183,7 +187,10 @@ static RPCHelpMan getprivacystatus()
                 {RPCResult::Type::BOOL, "listen", "Whether the node is accepting incoming connections"},
                 {RPCResult::Type::BOOL, "network_active", "Whether the network is active"},
                 {RPCResult::Type::NUM, "onion_peers", "Number of peers connected via Tor"},
-                {RPCResult::Type::NUM, "clearnet_peers", "Number of clearnet (IPv4/IPv6) peers"},
+                {RPCResult::Type::NUM, "i2p_peers", "Number of peers connected via I2P"},
+                {RPCResult::Type::NUM, "cjdns_peers", "Number of peers connected via CJDNS"},
+                {RPCResult::Type::NUM, "clearnet_peers", "Number of clearnet (public IPv4/IPv6) peers"},
+                {RPCResult::Type::NUM, "local_peers", "Number of peers on private/local addresses (e.g. Electrs, Mempool on the same host)"},
                 {RPCResult::Type::NUM, "total_peers", "Total number of connected peers"},
                 {RPCResult::Type::BOOL, "blocksonly", "Whether the node is in blocks-only mode"},
             }},
@@ -203,20 +210,26 @@ static RPCHelpMan getprivacystatus()
     obj.pushKV("listen", node.args ? node.args->GetBoolArg("-listen", true) : false);
     obj.pushKV("network_active", node.connman ? node.connman->GetNetworkActive() : false);
 
-    int onion_peers = 0, clearnet_peers = 0, total = 0;
+    int onion_peers = 0, i2p_peers = 0, cjdns_peers = 0, clearnet_peers = 0, local_peers = 0, total = 0;
     if (node.connman) {
         node.connman->ForEachNode([&](CNode* pnode) {
             total++;
-            if (pnode->ConnectedThroughNetwork() == NET_ONION) {
-                onion_peers++;
-            } else {
-                clearnet_peers++;
+            switch (pnode->ConnectedThroughNetwork()) {
+            case NET_ONION: onion_peers++; break;
+            case NET_I2P: i2p_peers++; break;
+            case NET_CJDNS: cjdns_peers++; break;
+            case NET_IPV4:
+            case NET_IPV6: clearnet_peers++; break;
+            default: local_peers++; break; // NET_UNROUTABLE / NET_INTERNAL: private ranges, Docker apps
             }
         });
     }
 
     obj.pushKV("onion_peers", onion_peers);
+    obj.pushKV("i2p_peers", i2p_peers);
+    obj.pushKV("cjdns_peers", cjdns_peers);
     obj.pushKV("clearnet_peers", clearnet_peers);
+    obj.pushKV("local_peers", local_peers);
     obj.pushKV("total_peers", total);
     obj.pushKV("blocksonly", node.args ? node.args->GetBoolArg("-blocksonly", false) : false);
 
@@ -296,6 +309,11 @@ static RPCHelpMan getpolicy()
                 {RPCResult::Type::NUM, "blockmaxweight", "Maximum block weight for mining"},
                 {RPCResult::Type::NUM, "limitancestorcount", "Maximum ancestor count for mempool"},
                 {RPCResult::Type::NUM, "limitdescendantcount", "Maximum descendant count for mempool"},
+                {RPCResult::Type::STR_AMOUNT, "minrelaytxfee", "Minimum relay fee rate in " + CURRENCY_UNIT + "/kvB"},
+                {RPCResult::Type::STR_AMOUNT, "incrementalrelayfee", "Incremental relay fee rate in " + CURRENCY_UNIT + "/kvB"},
+                {RPCResult::Type::STR_AMOUNT, "blockmintxfee", "Minimum fee rate for block templates in " + CURRENCY_UNIT + "/kvB"},
+                {RPCResult::Type::NUM, "rpcthreads", "Number of RPC worker threads"},
+                {RPCResult::Type::NUM, "rpcworkqueue", "Maximum RPC work queue depth"},
             }},
         RPCExamples{
             HelpExampleCli("getpolicy", "")
@@ -310,14 +328,30 @@ static RPCHelpMan getpolicy()
 
     obj.pushKV("datacarrier", args.GetBoolArg("-datacarrier", true));
     obj.pushKV("datacarriersize", args.GetIntArg("-datacarriersize", MAX_OP_RETURN_RELAY));
-    obj.pushKV("maxmempool", args.GetIntArg("-maxmempool", 300));
-    obj.pushKV("mempoolexpiry", args.GetIntArg("-mempoolexpiry", 336));
+    obj.pushKV("maxmempool", args.GetIntArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE_MB));
+    obj.pushKV("mempoolexpiry", args.GetIntArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY_HOURS));
     obj.pushKV("maxconnections", args.GetIntArg("-maxconnections", 125));
     obj.pushKV("blocksonly", args.GetBoolArg("-blocksonly", false));
     obj.pushKV("listen", args.GetBoolArg("-listen", true));
     obj.pushKV("blockmaxweight", args.GetIntArg("-blockmaxweight", DEFAULT_BLOCK_MAX_WEIGHT));
     obj.pushKV("limitancestorcount", args.GetIntArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT));
     obj.pushKV("limitdescendantcount", args.GetIntArg("-limitdescendantcount", DEFAULT_DESCENDANT_LIMIT));
+
+    // Fee rates as the node actually applies them (mempool options are parsed at startup)
+    if (node.mempool) {
+        obj.pushKV("minrelaytxfee", ValueFromAmount(node.mempool->m_opts.min_relay_feerate.GetFeePerK()));
+        obj.pushKV("incrementalrelayfee", ValueFromAmount(node.mempool->m_opts.incremental_relay_feerate.GetFeePerK()));
+    } else {
+        obj.pushKV("minrelaytxfee", ValueFromAmount(DEFAULT_MIN_RELAY_TX_FEE));
+        obj.pushKV("incrementalrelayfee", ValueFromAmount(DEFAULT_INCREMENTAL_RELAY_FEE));
+    }
+    CAmount block_min_fee{DEFAULT_BLOCK_MIN_TX_FEE};
+    if (const auto arg{args.GetArg("-blockmintxfee")}) {
+        if (const auto parsed{ParseMoney(*arg)}) block_min_fee = *parsed;
+    }
+    obj.pushKV("blockmintxfee", ValueFromAmount(block_min_fee));
+    obj.pushKV("rpcthreads", args.GetIntArg("-rpcthreads", DEFAULT_HTTP_THREADS));
+    obj.pushKV("rpcworkqueue", args.GetIntArg("-rpcworkqueue", DEFAULT_HTTP_WORKQUEUE));
 
     return obj;
 },
